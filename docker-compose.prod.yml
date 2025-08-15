@@ -3,7 +3,7 @@ services:
     image: nats:latest
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   arca-ms:
     image: noinblake/arca-ms-ketush:v1
@@ -42,7 +42,7 @@ services:
       - nats-servers
     restart: unless-stopped
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   auth-db:
     image: postgres:15-alpine
@@ -53,7 +53,7 @@ services:
       - auth-db-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   auth-ms:
     image: noinblake/auth-ms-ketush:v1
@@ -66,7 +66,7 @@ services:
       - auth-db
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   product-db:
     image: postgres:15-alpine
@@ -77,7 +77,7 @@ services:
       - product-db-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   products-ms:
     image: noinblake/products-ms-ketush:v1
@@ -89,7 +89,7 @@ services:
       - product-db
     restart: unless-stopped
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   contacts-db:
     image: postgres:15-alpine
@@ -100,7 +100,7 @@ services:
       - contacts-db-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   contacts-ms:
     image: noinblake/contacts-ms-ketush:v1
@@ -112,7 +112,7 @@ services:
       - contacts-db
     restart: unless-stopped
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   branches-db:
     image: postgres:15-alpine
@@ -123,7 +123,7 @@ services:
       - branches-db-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   branches-ms:
     image: noinblake/branches-ms-ketush:v1
@@ -135,7 +135,7 @@ services:
       - branches-db
     restart: unless-stopped
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   voucher-db:
     image: postgres:15-alpine
@@ -146,7 +146,7 @@ services:
       - voucher-db-data:/var/lib/postgresql/data
     restart: always
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
   voucher-ms:
     image: noinblake/voucher-ms-ketush:v1
@@ -158,10 +158,10 @@ services:
       - voucher-db
     restart: unless-stopped
     networks:
-      - laucher-app
+      - ketush-laucher-app
 
 networks:
-  laucher-app:
+  ketush-laucher-app:
     driver: bridge
 
 volumes:
