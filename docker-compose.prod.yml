@@ -1,0 +1,172 @@
+services:
+  nats-servers:
+    image: nats:latest
+    restart: always
+    networks:
+      - laucher-app
+
+  arca-ms:
+    image: noinblake/arca-ms-ketush:v1
+    environment:
+      - PORT=3008
+
+      - NATS_SERVERS=nats://nats-servers-ketush:4222
+
+      - CERT_PATH=./certs/test/Ketush.crt
+      - PRIVATE_KEY_PATH=./certs/test/private.key
+      - TA_FILES_PATH=./data
+      - CUIT=20169658146
+      - PROD=false
+
+      # WSDLs
+      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?wsdl"
+      - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl
+      - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
+      - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
+      - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
+      - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
+    restart: unless-stopped
+    depends_on:
+      - nats-servers
+    networks:
+      - ketshup-app
+
+  client-gateway:
+    image: noinblake/client-gateway-ketush:v1
+    ports:
+      - "4100:4100"
+    environment:
+      - PORT=4100
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - nats-servers
+    restart: unless-stopped
+    networks:
+      - laucher-app
+
+  auth-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_AUTH_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_AUTH_ENV}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - laucher-app
+
+  auth-ms:
+    image: noinblake/auth-ms-ketush:v1
+    environment:
+      - PORT=3004
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_AUTH_ENV}@auth-db:5432/${POSTGRES_DB_AUTH_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - auth-db
+    restart: always
+    networks:
+      - laucher-app
+
+  product-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_PRODUCTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_PRODUCTS_ENV}
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - laucher-app
+
+  products-ms:
+    image: noinblake/products-ms-ketush:v1
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_PRODUCTS_ENV}@product-db:5432/${POSTGRES_DB_PRODUCTS_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - product-db
+    restart: unless-stopped
+    networks:
+      - laucher-app
+
+  contacts-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_CONTACTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_CONTACTS_ENV}
+    volumes:
+      - contacts-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - laucher-app
+
+  contacts-ms:
+    image: noinblake/contacts-ms-ketush:v1
+    environment:
+      - PORT=3005
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_CONTACTS_ENV}@contacts-db:5432/${POSTGRES_DB_CONTACTS_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - contacts-db
+    restart: unless-stopped
+    networks:
+      - laucher-app
+
+  branches-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_BRANCHES_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_BRANCHES_ENV}
+    volumes:
+      - branches-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - laucher-app
+
+  branches-ms:
+    image: noinblake/branches-ms-ketush:v1
+    environment:
+      - PORT=3003
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_BRANCHES_ENV}@branches-db:5432/${POSTGRES_DB_BRANCHES_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - branches-db
+    restart: unless-stopped
+    networks:
+      - laucher-app
+
+  voucher-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_VOUCHER_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_VOUCHER_ENV}
+    volumes:
+      - voucher-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - laucher-app
+
+  voucher-ms:
+    image: noinblake/voucher-ms-ketush:v1
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - voucher-db
+    restart: unless-stopped
+    networks:
+      - laucher-app
+
+networks:
+  laucher-app:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  product-db-data:
+  contacts-db-data:
+  branches-db-data:
+  voucher-db-data:
