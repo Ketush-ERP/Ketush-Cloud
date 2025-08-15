@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   nats-servers:
     image: nats:latest
@@ -9,17 +11,14 @@ services:
     image: noinblake/arca-ms-ketush:v1
     environment:
       - PORT=3008
-
-      - NATS_SERVERS=nats://nats-servers-ketush:4222
-
+      - NATS_SERVERS=nats://nats-servers:4222
       - CERT_PATH=./certs/test/Ketush.crt
       - PRIVATE_KEY_PATH=./certs/test/private.key
       - TA_FILES_PATH=./data
       - CUIT=20169658146
       - PROD=false
-
       # WSDLs
-      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?wsdl"
+      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?wsdl
       - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?wsdl
       - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
       - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
@@ -29,7 +28,7 @@ services:
     depends_on:
       - nats-servers
     networks:
-      - ketush-launcher-app
+      - ketush-laucher-app
 
   client-gateway:
     image: noinblake/client-gateway-ketush:v1
