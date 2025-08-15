@@ -113,29 +113,6 @@ services:
     networks:
       - ketush-laucher-app
 
-  branches-db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_BRANCHES_ENV}
-      - POSTGRES_DB=${POSTGRES_DB_BRANCHES_ENV}
-    volumes:
-      - branches-db-data:/var/lib/postgresql/data
-    restart: always
-    networks:
-      - ketush-laucher-app
-
-  branches-ms:
-    image: noinblake/branches-ms-ketush:v1
-    environment:
-      - PORT=3003
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_BRANCHES_ENV}@branches-db:5432/${POSTGRES_DB_BRANCHES_ENV}?schema=public&sslmode=disable
-      - NATS_SERVERS=nats://nats-servers:4222
-    depends_on:
-      - branches-db
-    restart: unless-stopped
-    networks:
-      - ketush-laucher-app
-
   voucher-db:
     image: postgres:15-alpine
     environment:
