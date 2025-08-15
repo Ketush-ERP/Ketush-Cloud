@@ -29,7 +29,7 @@ services:
     depends_on:
       - nats-servers
     networks:
-      - ketshup-app
+      - ketush-launcher-app
 
   client-gateway:
     image: noinblake/client-gateway-ketush:v1
