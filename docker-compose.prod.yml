@@ -150,7 +150,7 @@ services:
       - PORT=5175
       - API_URL=http://bosquesrl.online/api
     depends_on:
-      - api-gateway
+      - client-gateway
     restart: unless-stopped
     networks:
       - ketush-laucher-app
