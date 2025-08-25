@@ -24,7 +24,7 @@ services:
       - PROD=false
 
       # WSDLs
-      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL"
+      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
       - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
       - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
       - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
