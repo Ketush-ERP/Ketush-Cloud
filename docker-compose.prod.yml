@@ -16,7 +16,7 @@ services:
 
       - CERT_PATH=./certs/test/Ketush.crt
       - PRIVATE_KEY_PATH=./certs/test/private.key
-      - TA_FILES_PATH=./data/test
+      - TA_FILES_PATH=./data
       # - CERT_PATH=./certs/prod/Ketush.crt
       # - PRIVATE_KEY_PATH=./certs/prod/private.key
       # - TA_FILES_PATH=./data/prod
