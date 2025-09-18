@@ -19,8 +19,6 @@ jobs:
             path: microservices/auth-ms
           - name: arca-ms
             path: microservices/arca-ms
-          - name: branches-ms
-            path: microservices/branches-ms
           - name: contacts-ms
             path: microservices/contacts-ms
           - name: products-ms
