@@ -30,10 +30,9 @@ jobs:
       max-parallel: 8
 
     steps:
-      - name: Checkout repo with submodules
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
 
       - name: Validate Dockerfile
@@ -64,10 +63,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo with submodules
+      - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
 
       - name: Set up SSH
@@ -92,7 +90,7 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           ssh -p ${{ secrets.SERVER_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cd /root/bosque
+            cd /root/ketush
             docker compose -f docker-compose.prod.yml pull || { echo "❌ Compose pull failed"; exit 1; }
             docker compose -f docker-compose.prod.yml up -d || { echo "❌ Compose up failed"; exit 1; }
           EOF
