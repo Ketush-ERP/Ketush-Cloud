@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContactType {
+  CLIENT
+  SUPPLIER
+}
+
+enum IvaCondition {
+  RESPONSABLE_INSCRIPTO 
+  MONOTRIBUTISTA 
+  EXENTO 
+  CONSUMIDOR_FINAL 
+  SUJETO_NO_CATEGORIZADO
+  PROVEEDOR_DEL_EXTERIOR
+  CLIENTE_DEL_EXTERIOR
+  IVA_LIBERADO_LEY_19640
+  IVA_NO_ALCANZADO
+}
+
+enum DocumentType {
+  DNI
+  CUIL
+  CUIT
+}
+
+model EContact {
+  id             String        @id @default(uuid())
+  code           Int        @unique @default(autoincrement())
+  name           String
+  businessName   String?
+  documentType   DocumentType  // enum: DNI, CUIL, CUIT
+  documentNumber String        @unique // <- nuevo nombre aquí
+  ivaCondition   IvaCondition
+  phone          String?
+  email          String?
+  address        String?
+  nameFile       String?
+  type           ContactType
+  available      Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  profitMargin   Float?        // <- Margen de ganancia opcional por proveedor
+
+  @@index([id, available, name, documentNumber])
+
+}
+
+

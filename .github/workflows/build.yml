@@ -1,0 +1,104 @@
+name: Build & Deploy to Cloud Server Repair
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: frontend
+            path: frontend
+          - name: client-gateway
+            path: client-gateway
+          - name: auth-ms
+            path: microservices/auth-ms
+          - name: arca-ms
+            path: microservices/arca-ms
+          - name: branches-ms
+            path: microservices/branches-ms
+          - name: contacts-ms
+            path: microservices/contacts-ms
+          - name: products-ms
+            path: microservices/products-ms
+          - name: voucher-ms
+            path: microservices/voucher-ms
+      max-parallel: 8
+
+    steps:
+      - name: Checkout repo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Validate Dockerfile
+        run: |
+          if [ ! -f "${{ matrix.service.path }}/dockerfile.prod" ]; then
+            echo "❌ Missing dockerfile.prod in ${{ matrix.service.path }}"
+            exit 1
+          fi
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build & Push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v4
+        with:
+          context: ./${{ matrix.service.path }}
+          file: ./${{ matrix.service.path }}/dockerfile.prod
+          push: true
+          no-cache: true
+          tags: |
+            noinblake/${{ matrix.service.name }}-ketush:v1
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        run: ssh-keyscan -p ${{ secrets.SERVER_PORT }} -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Upload config files
+        run: |
+          ssh -p ${{ secrets.SERVER_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /root/ketush"
+          scp -P ${{ secrets.SERVER_PORT }} docker-compose.prod.yml .env ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/root/ketush/
+
+      - name: Login to Docker Hub on server
+        run: |
+          ssh -p ${{ secrets.SERVER_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << EOF
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          EOF
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -p ${{ secrets.SERVER_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /root/bosque
+            docker compose -f docker-compose.prod.yml pull || { echo "❌ Compose pull failed"; exit 1; }
+            docker compose -f docker-compose.prod.yml up -d || { echo "❌ Compose up failed"; exit 1; }
+          EOF
+
+      - name: Cleanup unused Docker data on server
+        run: |
+          ssh -p ${{ secrets.SERVER_PORT }} ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            docker system prune -af --volumes
+          EOF

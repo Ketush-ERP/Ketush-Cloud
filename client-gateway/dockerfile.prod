@@ -1,0 +1,31 @@
+# Etapa 1: Instalar todas las dependencias (dev y prod)
+FROM node:20-slim AS deps
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps
+
+# Etapa 2: Build y Prisma generate
+FROM node:20-slim AS build
+
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+
+# Compilar la app
+RUN npm run build
+
+# Etapa 3: Imagen final prod (distroless)
+FROM node:20-slim AS build-up
+
+WORKDIR /app
+
+# Copiar compilado y node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+
+EXPOSE 4100
+
+CMD ["dist/main.js"]

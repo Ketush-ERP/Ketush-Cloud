@@ -1,0 +1,52 @@
+services:
+  nats-servers:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+  auth-db:
+    image: postgres:13
+    ports:
+      - "5433:5432"
+    environment:
+      # - POSTGRES_USER=postgres_auth
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_AUTH_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_AUTH_ENV}
+    volumes:
+      - ./database_lobo/auth-ms/postgres:/var/lib/postgresql/data
+    restart: always
+
+  product-db:
+    image: postgres:13
+    ports:
+      - "5434:5432"
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_PRODUCTS_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_PRODUCTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_PRODUCTS_ENV}
+    volumes:
+      - ./database_lobo/products-ms/postgres:/var/lib/postgresql/data
+    restart: always
+  contacts-db:
+    image: postgres:13
+    ports:
+      - "5436:5432"
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_CONTACTS_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_CONTACTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_CONTACTS_ENV}
+    volumes:
+      - ./database_lobo/contacts-ms/postgres:/var/lib/postgresql/data
+    restart: always
+
+  voucher-db:
+    image: postgres:13
+    ports:
+      - "5437:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_VOUCHER_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_VOUCHER_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_VOUCHER_ENV}
+    volumes:
+      - ./database_lobo/voucher-ms/postgres:/var/lib/postgresql/data
+    restart: always
