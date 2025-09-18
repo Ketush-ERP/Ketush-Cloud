@@ -1,0 +1,10 @@
+/* Estilo para negrita en la primera columna */
+.bold-cell {
+  font-weight: 700;
+}
+
+/* Estilo para fila hover */
+.custom-row:hover {
+  background-color: #cce4ff !important; /* Celeste claro */
+  cursor: pointer;
+}

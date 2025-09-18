@@ -1,0 +1,14 @@
+# Etapa única: entorno de desarrollo
+FROM node:20-slim
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+# Expone el puerto típico de desarrollo, como 5173 (Vite), 3000 (React), 4200 (Angular)
+EXPOSE 5175
+
+CMD ["npm", "run", "dev"]

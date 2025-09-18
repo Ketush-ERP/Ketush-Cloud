@@ -1,0 +1,68 @@
+/* Estilos personalizados para la página de Gestión */
+
+/* Transiciones suaves para los botones de navegación */
+.nav-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-button:hover {
+  transform: translateY(-2px);
+}
+
+.nav-button.active {
+  transform: scale(1.05);
+}
+
+/* Efectos de hover para las tarjetas */
+.hover-scale {
+  transition: transform 0.2s ease-in-out;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Animaciones para las tablas */
+.table-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilos para los badges de estado */
+.status-badge {
+  transition: all 0.2s ease-in-out;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* Efectos para los formularios */
+.form-container {
+  transition: all 0.3s ease-in-out;
+}
+
+.form-container:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive grid para navegación */
+@media (max-width: 768px) {
+  .nav-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-button {
+    padding: 1rem;
+  }
+}
