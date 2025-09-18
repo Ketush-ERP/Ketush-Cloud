@@ -21,7 +21,7 @@ let ArcaService = class ArcaService {
     token = null;
     sign = null;
     expirationTime = null;
-    pointOfSale = 2;
+    pointOfSale = 3;
     _voucherTypeMap = {
         [voucher_type_enum_1.VoucherType.FACTURA_A]: 1,
         [voucher_type_enum_1.VoucherType.FACTURA_B]: 6,
@@ -139,7 +139,7 @@ let ArcaService = class ArcaService {
         const cmsBase64 = fs
             .readFileSync(cmsBase64Path, 'utf8')
             .replace(/\r?\n/g, '');
-        const wsaaUrl = config_1.envs.wsaaWsdlHomo.replace('?WSDL', '');
+        const wsaaUrl = config_1.envs.wsaaWsdlProd.replace('?WSDL', '');
         const soapEnvelope = `
       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:wsaa="http://wsaa.view.sua.dvadac.desein.afip.gov/wsaa/">
         <soapenv:Header/>
@@ -167,7 +167,6 @@ let ArcaService = class ArcaService {
         this.token = token;
         this.sign = sign;
         this.expirationTime = new Date(expiration);
-        console.log(token);
         const result = { token, sign, expirationTime: expiration };
         fs.mkdirSync(taFilesPath, { recursive: true });
         fs.writeFileSync(cachePath, JSON.stringify(result, null, 2), 'utf-8');
@@ -177,7 +176,7 @@ let ArcaService = class ArcaService {
         try {
             const { token, sign } = this._getCredentials();
             const cbteTipo = this._getVoucherCode(voucherType);
-            const endpoint = config_1.envs.wsfeWsdlHomo;
+            const endpoint = config_1.envs.wsfeWsdlProd;
             const wsfeUrl = endpoint.replace('?WSDL', '');
             const requestXml = `
       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ar="http://ar.gov.afip.dif.FEV1/">
@@ -269,7 +268,7 @@ let ArcaService = class ArcaService {
             const ivaAmount = isTypeC ? 0 : dto.ivaAmount || 0;
             const impTotal = dto.netAmount + ivaAmount;
             const ivaCondition = this._ivaConditionMap[dto.ivaCondition];
-            const wsfeUrl = config_1.envs.wsfeWsdlHomo.replace('?WSDL', '');
+            const wsfeUrl = config_1.envs.wsfeWsdlProd.replace('?WSDL', '');
             const docNroXml = dto.contactCuil
                 ? `<ar:DocNro>${dto.contactCuil}</ar:DocNro>`
                 : '';

@@ -16,7 +16,7 @@ export class ArcaService {
   private sign: string | null = null;
   private expirationTime: Date | null = null;
 
-  private pointOfSale = 2;
+  private pointOfSale = 3;
 
   private _voucherTypeMap: Record<VoucherType, number> = {
     [VoucherType.FACTURA_A]: 1,

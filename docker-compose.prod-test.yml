@@ -1,0 +1,192 @@
+services:
+  nats-servers:
+    image: nats:latest
+    container_name: nats-servers
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    networks:
+      - ketshup-app
+    restart: always
+
+  client-gateway-ketush:
+    image: client-gateway-ketush
+    build:
+      context: ./client-gateway
+      dockerfile: dockerfile.prod
+    ports:
+      - "4100:4100"
+    environment:
+      - PORT=4100
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - nats-servers
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+  arca-ms-ketush:
+    image: arca-ms-ketush
+    build:
+      context: ./microservices/arca-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - PORT=3008
+
+      - NATS_SERVERS=nats://nats-servers:4222
+
+      # - CERT_PATH=./certs/test/Ketush.crt
+      # - PRIVATE_KEY_PATH=./certs/test/private.key
+      # - TA_FILES_PATH=./data/test
+      - CERT_PATH=./certs/prod/Ketush.crt
+      - PRIVATE_KEY_PATH=./certs/prod/private.key
+      - TA_FILES_PATH=./data/prod
+      - CUIT=20169658146
+      - PROD=false
+
+      # WSDLs
+      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
+      - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
+      - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
+      - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
+      - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
+      - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+  auth-db:
+    image: postgres:15-alpine
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_AUTH_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_AUTH_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_AUTH_ENV}
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - ketshup-app
+
+  auth-ms-ketush:
+    image: auth-ms-ketush
+    build:
+      context: ./microservices/auth-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - PORT=3004
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_AUTH_ENV}@auth-db:5432/${POSTGRES_DB_AUTH_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - auth-db
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+  product-db:
+    image: postgres:15-alpine
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_PRODUCTS_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_PRODUCTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_PRODUCTS_ENV}
+    volumes:
+      - product-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - ketshup-app
+
+  products-ms-ketush:
+    image: products-ms-ketush
+    build:
+      context: ./microservices/products-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_PRODUCTS_ENV}@product-db:5432/${POSTGRES_DB_PRODUCTS_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - product-db
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+  contacts-db:
+    image: postgres:15-alpine
+
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_CONTACTS_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_CONTACTS_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_CONTACTS_ENV}
+    volumes:
+      - contacts-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - ketshup-app
+
+  contacts-ms-ketush:
+    image: contacts-ms-ketush
+    build:
+      context: ./microservices/contacts-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - PORT=3005
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_CONTACTS_ENV}@contacts-db:5432/${POSTGRES_DB_CONTACTS_ENV}?schema=public&sslmode=disable
+      - NATS_SERVERS=nats://nats-servers:4222
+    depends_on:
+      - contacts-db
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+  voucher-ms-ketush:
+    image: voucher-ms-ketush
+    build:
+      context: ./microservices/voucher-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - NATS_SERVERS=nats://nats-servers:4222
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
+      - PORT=3006
+    depends_on:
+      - voucher-db
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+  voucher-db:
+    image: postgres:15-alpine
+    ports:
+      - "5437:5432"
+    environment:
+      # - POSTGRES_USER=${POSTGRES_USER_VOUCHER_ENV}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_VOUCHER_ENV}
+      - POSTGRES_DB=${POSTGRES_DB_VOUCHER_ENV}
+    volumes:
+      - voucher-db-data:/var/lib/postgresql/data
+    restart: always
+    networks:
+      - ketshup-app
+
+  frontend-ketush:
+    image: frontend-ketush
+    environment:
+      - PORT=5175
+    ports:
+      - "5175:5175"
+    build:
+      context: ../KetushFrontend
+      dockerfile: dockerfile.prod
+    depends_on:
+      - client-gateway-ketush
+    restart: unless-stopped
+    networks:
+      - ketshup-app
+
+networks:
+  ketshup-app:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  product-db-data:
+  contacts-db-data:
+  voucher-db-data:

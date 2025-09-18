@@ -63,21 +63,11 @@ export default function ClienteForm({
   const createContactMutation = useCreateContact();
 
   const handleFormSubmit = async (data) => {
-    console.log("=== CLIENTE FORM SUBMIT ===");
-    console.log("Raw form data:", data);
-    console.log("Form errors:", errors);
-    console.log("businessName value:", data.businessName);
-    console.log("businessName type:", typeof data.businessName);
-
     // Limpiar el CUIL antes de enviar
     const cleanedData = {
       ...data,
       documentNumber: cleanCUIL(data.documentNumber || ""),
     };
-
-    console.log("Cleaned data:", cleanedData);
-    console.log("useInternalMutation:", useInternalMutation);
-    console.log("onSubmit function:", typeof onSubmit);
 
     if (useInternalMutation) {
       try {
@@ -134,11 +124,7 @@ export default function ClienteForm({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            console.log("Form submit event triggered");
-            console.log("Form element:", e.target);
-            console.log(
-              "Preventing default and calling handleFormSubmit directly"
-            );
+
             handleFormSubmit(getValues());
           }}
           className="space-y-6"

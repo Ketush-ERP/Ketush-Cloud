@@ -55,7 +55,6 @@ export class AuthController {
       const AccesToArca = await firstValueFrom(
         this.client.send({ cmd: 'arca_authorize' }, {}),
       );
-      console.log(AccesToArca);
       return {
         ...response,
       };

@@ -21,6 +21,7 @@ const microservices_1 = require("@nestjs/microservices");
 const rxjs_1 = require("rxjs");
 const operators_1 = require("rxjs/operators");
 const enum_1 = require("../enum");
+const QRCode = require("qrcode");
 let VouchersService = VouchersService_1 = class VouchersService extends client_1.PrismaClient {
     client;
     logger = new common_1.Logger(VouchersService_1.name);
@@ -43,6 +44,26 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     constructor(client) {
         super();
         this.client = client;
+    }
+    async _generateAfipQr(voucher, contact) {
+        const qrData = {
+            ver: 1,
+            fecha: new Date(voucher.emissionDate).toISOString().slice(0, 10),
+            cuit: Number(voucher.issuerCuit ?? '20169658146'),
+            ptoVta: voucher.pointOfSale,
+            tipoCmp: Number(voucher.typeCode ?? 1),
+            nroCmp: voucher.voucherNumber,
+            importe: Number(voucher.totalAmount ?? 0),
+            moneda: 'PES',
+            ctz: 1,
+            tipoDocRec: contact?.documentTypeCode ?? 80,
+            nroDocRec: Number(contact?.documentNumber ?? 0),
+            tipoCodAut: 'E',
+            codAut: voucher.arcaCae,
+        };
+        const base64Json = Buffer.from(JSON.stringify(qrData)).toString('base64');
+        const url = `https://www.afip.gob.ar/fe/qr/?p=${base64Json}`;
+        return await QRCode.toDataURL(url);
     }
     async _loadToArca(arcaDto) {
         try {
@@ -362,6 +383,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 titulo = 'PRESUPUESTO';
                 cod = '999';
         }
+        const qrBase64 = await this._generateAfipQr(voucher, contact);
         const showIva = [enum_1.VoucherType.FACTURA_A, enum_1.VoucherType.FACTURA_B].includes(voucher?.type);
         const ivaRateDefault = showIva ? 0.21 : 0;
         const productsHtml = (voucher?.products || [])
@@ -398,60 +420,50 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>${titulo} ${letra}</title>
     <style>
-      /* --- Reset/print-safe --- */
       * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; color: #000; }
       html, body { margin: 0; padding: 0; }
       @page { size: A4; margin: 12mm; }
-      body { font-size: 12px; line-height: 1.25; }
+      body { font-size: 12px; line-height: 1.3; }
 
-      /* --- Utilities --- */
+      /* Utilidades */
       .t-left{ text-align:left; } .t-center{ text-align:center; } .t-right{ text-align:right; }
-      .bold{ font-weight:700; } .mt-4{ margin-top:4px; } .mt-8{ margin-top:8px; } .mt-12{ margin-top:12px; }
-      .mb-0{ margin-bottom:0; } .w-100{ width:100%; }
+      .bold{ font-weight:700; } .w-100{ width:100%; }
+      .mt-6{ margin-top:6px; } .mt-12{ margin-top:12px; }
 
-      /* --- Blocks --- */
-      .box { border: 1px solid #000; padding: 8px; }
-      .box-tight { border: 1px solid #000; padding: 6px; }
-
-      /* --- Header (grid, no absolute) --- */
+      /* Header */
       .hdr { display: grid; grid-template-columns: 1fr 90px 1fr; gap: 8px; align-items: stretch; }
+      .hdr .brand { border: 1px solid #000; padding: 8px; }
       .hdr .brand h2 { font-size: 20px; margin: 0 0 4px 0; }
-      .hdr .brand p { margin: 0; }
-      .hdr .center {
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        border: 1px solid #000;
-      }
-      .hdr .center .letter { font-size: 36px; font-weight: 700; line-height: 1; }
+      .hdr .center { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #000; }
+      .hdr .center .letter { font-size: 42px; font-weight: 700; line-height: 1; }
       .hdr .center .cod { font-size: 11px; margin-top: 2px; }
-      .hdr .right h3 { text-align: center; font-size: 18px; margin: 0 0 4px 0; }
-      .hdr .right p { margin: 0; line-height: 1.35; }
+      .hdr .right { border: 1px solid #000; padding: 8px; }
+      .hdr .right h3 { text-align: center; font-size: 18px; margin: 0 0 6px 0; }
 
-      /* --- Bands --- */
-      .band { display: flex; justify-content: space-between; gap: 8px; }
+      /* Band */
+      .band { display: flex; justify-content: space-between; gap: 8px; border: 1px solid #000; padding: 6px; }
 
-      /* --- Client --- */
-      .client-row { display: grid; grid-template-columns: 30% 70%; gap: 8px; }
-      .client-row + .client-row { margin-top: 6px; }
+      /* Client */
+      .client { border: 1px solid #000; padding: 8px; margin-top: 8px; }
+      .client-row { display: grid; grid-template-columns: 30% 70%; gap: 8px; margin-top: 4px; }
 
-      /* --- Tables --- */
-      table { width: 100%; border-collapse: collapse; }
+      /* Tables */
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
       th, td { border: 1px solid #000; padding: 6px; }
-      th { font-weight: 700; background: transparent; } /* sin grises */
+      th { font-weight: 700; background: #f2f2f2; }
 
-      /* --- Totals --- */
-      .totals { width: 50%; margin-left: auto; }
+      /* Totals */
+      .totals { width: 50%; margin-left: auto; border: 1px solid #000; margin-top: 12px; }
       .totals td { padding: 6px; }
       .totals tr td:first-child { font-weight: 700; }
+      .totals tr:last-child td { font-size: 14px; font-weight: 700; background: #f2f2f2; }
 
-      /* --- Footer --- */
-      .foot { display: grid; grid-template-columns: 2fr 1.5fr; gap: 8px; align-items: start; }
-      .foot-note { font-size: 10px; font-style: italic; font-weight: 700; margin: 6px 0 0 0; }
+      /* Footer */
+      .foot { display: grid; grid-template-columns: 2fr 1.5fr; gap: 8px; margin-top: 12px; }
+      .foot-note { font-size: 10px; font-style: italic; margin-top: 6px; }
+      .qr { text-align: center; margin-top: 8px; }
 
-      /* --- Page title "ORIGINAL" --- */
       .copy-title { text-align: center; font-weight: 700; border: 1px solid #000; border-bottom: 0; padding: 6px; }
-
-      /* --- Avoid breaks inside key blocks --- */
-      .box, .box-tight, .hdr, .totals, table { page-break-inside: avoid; }
     </style>
   </head>
   <body>
@@ -459,11 +471,11 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
 
     <!-- Header -->
     <section class="hdr">
-      <div class="brand box">
+      <div class="brand">
         <h2>${voucher?.issuerName || 'LOBO CARLOS ALBERTO'}</h2>
-        <p><b>Razón Social:</b> ${voucher?.issuerName || 'LOBO CARLOS ALBERTO'}</p>
-        <p><b>Domicilio Comercial:</b> ${voucher?.issuerAddress || 'Castulo Peña 1374 - Jesús María, Córdoba '}</p>
-        <p><b>Condición frente al IVA:</b> ${voucher?.issuerIvaCondition || 'Iva Responsable Inscripto'}</p>
+        <p><b>Razón Social:</b> ${voucher?.issuerName || '-'}</p>
+        <p><b>Domicilio Comercial:</b> ${voucher?.issuerAddress || '-'}</p>
+        <p><b>Condición frente al IVA:</b> ${voucher?.issuerIvaCondition || '-'}</p>
       </div>
 
       <div class="center">
@@ -471,53 +483,50 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
         <div class="cod">COD. ${cod}</div>
       </div>
 
-      <div class="right box">
+      <div class="right">
         <h3>${titulo}</h3>
         <p><b>Punto de Venta:</b> ${voucher?.pointOfSale ?? '-'}</p>
         <p><b>Comp. Nro:</b> ${voucher?.voucherNumber ?? '-'}</p>
-        <p><b>Fecha de Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}</p>
-        <p><b>CUIT:</b> ${voucher?.issuerCuit ?? '20169658146'}</p>
-        <p><b>Ingresos Brutos:</b> ${voucher?.issuerIibb ?? '270197035'}</p>
-        <p><b>Inicio Activ.:</b> ${voucher?.issuerStartDate ?? '01/04/2000'}</p>
+        <p><b>Fecha Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}</p>
+        <p><b>CUIT:</b> ${voucher?.issuerCuit ?? '-'}</p>
+        <p><b>Ingresos Brutos:</b> ${voucher?.issuerIibb ?? '-'}</p>
+        <p><b>Inicio Activ.:</b> ${voucher?.issuerStartDate ?? '-'}</p>
       </div>
     </section>
 
     <!-- Period -->
-    <section class="box band mt-8">
-      <div><b>Período Facturado Desde:</b> ${voucher?.periodFrom ? formatDate(voucher.periodFrom) : formatDate(voucher.emissionDate)}</div>
+    <section class="band mt-12">
+      <div><b>Período Desde:</b> ${voucher?.periodFrom ? formatDate(voucher.periodFrom) : formatDate(voucher.emissionDate)}</div>
       <div><b>Hasta:</b> ${voucher?.periodTo ? formatDate(voucher.periodTo) : formatDate(voucher.emissionDate)}</div>
-      <div><b>Fecha de Vto. para el pago:</b> ${voucher?.dueDate ? formatDate(voucher.dueDate) : formatDate(voucher.emissionDate)}</div>
+      <div><b>Vto. Pago:</b> ${voucher?.dueDate ? formatDate(voucher.dueDate) : formatDate(voucher.emissionDate)}</div>
     </section>
 
     <!-- Client -->
-    <section class="box mt-8">
+    <section class="client">
       <div class="client-row">
         <div><b>CUIT/DNI:</b> ${contact?.documentNumber || '-'}</div>
-        <div><b>Apellido y Nombre / Razón Social:</b> ${contact?.name || '-'}</div>
+        <div><b>Cliente:</b> ${contact?.name || '-'}</div>
       </div>
       <div class="client-row">
-        <div><b>Condición frente al IVA:</b> ${contact?.ivaCondition || 'CONSUMIDOR FINAL'}</div>
+        <div><b>IVA:</b> ${contact?.ivaCondition || '-'}</div>
         <div><b>Domicilio:</b> ${contact?.address || '-'}</div>
       </div>
-      <div class="client-row">
-        ${letra !== 'P' ? `<div><b>Condición de venta:</b> ${voucher.conditionPayment === 'CREDIT' ? 'Crédito' : 'Contado'}</div>` : ''}
-        <div></div>
-      </div>
+      ${letra !== 'P' ? `<div class="client-row"><div><b>Condición de venta:</b> ${voucher.conditionPayment === 'CREDIT' ? 'Cuenta Corriente' : 'Contado'}</div><div></div></div>` : ''}
     </section>
 
     <!-- Items -->
-    <section class="mt-8">
+    <section>
       <table>
         <thead>
           <tr>
-            <th class="t-left">Código</th>
-            <th class="t-left">Producto / Servicio</th>
+            <th>Código</th>
+            <th>Producto / Servicio</th>
             <th>Cantidad</th>
             <th>U. Medida</th>
             <th>Precio Unit.</th>
             <th>% Bonif</th>
             <th>Subtotal</th>
-            <th>Alicuota IVA</th>
+            <th>IVA</th>
           </tr>
         </thead>
         <tbody>
@@ -527,8 +536,10 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
               <td class="t-left">-</td>
               <td class="t-left">-</td>
               <td class="t-right">0,00</td>
+              <td class="t-center">-</td>
               <td class="t-right">0,00</td>
               <td class="t-center">0,00</td>
+              <td class="t-right">0,00</td>
               <td class="t-center">-</td>
             </tr>`}
         </tbody>
@@ -536,30 +547,29 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     </section>
 
     <!-- Totals -->
-    <section class="mt-8">
-      <table class="totals box-tight">
-        <tbody>
-          ${netoBlock}
-          ${ivaBlock}
-          <tr><td>Total</td><td class="t-right"><b>$ ${money(total)}</b></td></tr>
-          <tr><td>Pagado</td><td class="t-right">$ ${money(paid)}</td></tr>
-          <tr><td>Saldo</td><td class="t-right">$ ${paid > total ? 0 : money(remaining)}</td></tr>
-        </tbody>
-      </table>
-    </section>
+    <table class="totals">
+      <tbody>
+        ${netoBlock}
+        ${ivaBlock}
+        <tr><td>Total</td><td class="t-right">$ ${money(total)}</td></tr>
+        <tr><td>Pagado</td><td class="t-right">$ ${money(paid)}</td></tr>
+        <tr><td>Saldo</td><td class="t-right">$ ${paid > total ? 0 : money(remaining)}</td></tr>
+      </tbody>
+    </table>
 
     <!-- Footer -->
-    <section class="box mt-12 foot">
+    <section class="foot">
       <div>
         ${letra === 'P' ? '<div class="bold">Comprobante Autorizado</div>' : '<div class="bold">Comprobante No Autorizado</div>'}
         <p class="foot-note">Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación</p>
+        <div class="qr"><img src="${qrBase64}" width="120"/></div>
       </div>
       <div>
         <table>
           <tr><td><b>CAE N°</b></td><td class="t-right">${voucher?.arcaCae || '-'}</td></tr>
-          <tr><td><b>Fecha de Vto. de CAE</b></td><td class="t-right">${voucher?.arcaDueDate || '-'}</td></tr>
+          <tr><td><b>Vto. CAE</b></td><td class="t-right">${voucher?.arcaDueDate || '-'}</td></tr>
         </table>
-        <div class="t-center mt-8">Pág 1/1</div>
+        <div class="t-center mt-6">Pág 1/1</div>
       </div>
     </section>
   </body>

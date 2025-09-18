@@ -52,26 +52,9 @@ export default function CreateNotaModal({ invoice, onClose, onSuccess }) {
     enabled: shouldGenerateNumber && !!formData.cuil && !!formData.type,
   });
 
-  // Debug: verificar el estado del hook
-  console.log("DEBUG - useNextInvoiceNumber:", {
-    cuil: formData.cuil,
-    voucherType: formData.type,
-    enabled: shouldGenerateNumber && !!formData.cuil && !!formData.type,
-    nextNumber,
-    isLoading: isLoadingNextNumber,
-    error: nextNumberError,
-  });
-
   // Efecto para establecer el siguiente número de nota
   useEffect(() => {
     if (nextNumber?.nextNumber?.number && shouldGenerateNumber) {
-      console.log("DEBUG - Números generados:", {
-        nextNumber: nextNumber.nextNumber.number,
-        pointOfSale: nextNumber.nextNumber.pointOfSale,
-        type: formData.type,
-        cuil: formData.cuil,
-      });
-
       setFormData((prev) => ({
         ...prev,
         voucherNumber: nextNumber.nextNumber.number, // Usar el número directamente, no parseInt
@@ -134,30 +117,9 @@ export default function CreateNotaModal({ invoice, onClose, onSuccess }) {
       return;
     }
 
-    // Debug: mostrar los datos que se van a enviar
-    console.log("Datos a enviar:", formData);
-    console.log("Tipo de nota:", formData.type);
-    console.log("Tipo de factura:", formData.associatedVoucherType);
-    console.log("DEBUG - Números de la nota:", {
-      voucherNumber: formData.voucherNumber,
-      pointOfSale: formData.pointOfSale,
-      associatedVoucherNumber: formData.associatedVoucherNumber,
-    });
-    console.log("DEBUG - Números de la factura asociada:", {
-      facturaVoucherNumber: invoice?.voucherNumber,
-      facturaPointOfSale: invoice?.pointOfSale,
-    });
-    console.log("DEBUG - Verificación de tipos:", {
-      voucherNumberType: typeof formData.voucherNumber,
-      pointOfSaleType: typeof formData.pointOfSale,
-      voucherNumberValue: formData.voucherNumber,
-      pointOfSaleValue: formData.pointOfSale,
-    });
-
     // Obtener la fecha actual del sistema
     const currentDate = new Date();
     const currentDateISO = currentDate.toISOString();
-    console.log("DEBUG - Usando fecha actual del sistema:", currentDateISO);
 
     // Preparar los datos para enviar, usando la fecha actual del sistema
     const dataToSend = {
@@ -168,16 +130,6 @@ export default function CreateNotaModal({ invoice, onClose, onSuccess }) {
         selectedProducts.has(index)
       ),
     };
-
-    console.log(
-      "DEBUG - Productos seleccionados para enviar:",
-      dataToSend.products
-    );
-    console.log("DEBUG - Total recalculado:", dataToSend.totalAmount);
-    console.log(
-      "DEBUG - Fecha de emisión que se enviará:",
-      dataToSend.emissionDate
-    );
 
     setIsLoading(true);
     try {
@@ -234,26 +186,12 @@ export default function CreateNotaModal({ invoice, onClose, onSuccess }) {
     ];
   };
 
-  // Debug: verificar qué tipos se están generando
-  console.log("Tipos disponibles:", getAvailableNotaTypes());
-  console.log("Tipo seleccionado:", formData.type);
-  console.log("DEBUG - Invoice completo:", invoice);
-  console.log("DEBUG - Cliente:", {
-    contactId: formData.contactId,
-    invoiceContactId: invoice?.contactId,
-    invoiceContact: invoice?.contact,
-    clientData,
-    isLoadingClient,
-  });
-
   // Inicializar el tipo de nota según el tipo de factura
   useEffect(() => {
     if (invoice?.type) {
       const facturaType = invoice.type;
       const notaType =
         facturaType === "FACTURA_B" ? "NOTA_CREDITO_B" : "NOTA_CREDITO_A";
-
-      console.log("Inicializando nota:", { facturaType, notaType });
 
       setFormData((prev) => ({
         ...prev,
