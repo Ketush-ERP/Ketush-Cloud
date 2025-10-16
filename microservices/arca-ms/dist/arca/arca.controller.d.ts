@@ -1,8 +1,21 @@
 import { ArcaService } from './arca.service';
 import { VoucherType } from 'src/enum/voucher-type.enum';
+import { CreateVocuherDto } from './dto/create-voucher.dto';
 export declare class ArcaController {
     private readonly arcaService;
     constructor(arcaService: ArcaService);
+    getContribuyenteData(cuit: number): Promise<{
+        cuit: any;
+        razonSocial: any;
+        tipoPersona: any;
+        domicilio: any;
+        localidad: any;
+        provincia: any;
+        codigoPostal: any;
+        condicionIVA: string;
+        ingresosBrutos: any;
+        inicioActividades: any;
+    }>;
     login(): Promise<{
         token: string;
         sign: string;
@@ -15,5 +28,5 @@ export declare class ArcaController {
         pointOfSale: number;
         number: number;
     }>;
-    emitInvoice(dto: any): Promise<any>;
+    emitInvoice(dto: CreateVocuherDto): Promise<any>;
 }

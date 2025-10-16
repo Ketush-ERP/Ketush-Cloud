@@ -18,6 +18,7 @@ interface EnvVars {
   WSDL_WSFEX_PROD: string;
   WSDL_WSFE_HOM: string;
   WSDL_WSFE_PROD: string;
+  WS_PADRON_A13_URL: string;
 }
 
 const envsSchema = joi
@@ -36,6 +37,7 @@ const envsSchema = joi
     WSDL_WSFEX_PROD: joi.string().required(),
     WSDL_WSFE_HOM: joi.string().required(),
     WSDL_WSFE_PROD: joi.string().required(),
+    WS_PADRON_A13_URL: joi.string().required(),
   })
   .unknown(true);
 
@@ -66,4 +68,5 @@ export const envs = {
   wsfexWsdlProd: envVars.WSDL_WSFEX_PROD,
   wsfeWsdlHomo: envVars.WSDL_WSFE_HOM,
   wsfeWsdlProd: envVars.WSDL_WSFE_PROD,
+  wsPadronA13Url: envVars.WS_PADRON_A13_URL,
 };

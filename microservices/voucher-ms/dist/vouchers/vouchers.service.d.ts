@@ -11,6 +11,7 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
     private _calculateIva;
     onModuleInit(): void;
     constructor(client: ClientProxy);
+    private _voucherTypeMap;
     private _generateAfipQr;
     private _loadToArca;
     create(createVoucherDto: CreateVoucherDto): Promise<{

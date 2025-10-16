@@ -67,6 +67,69 @@ let ArcaService = class ArcaService {
             expirationTime: expiration.toISOString(),
         };
     }
+    async getContribuyenteData(cuit) {
+        try {
+            const { token, sign } = this._getCredentials();
+            const wsPadronUrl = config_1.envs.wsPadronA13Url.replace('?WSDL', '');
+            const requestXml = `
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                          xmlns:a13="http://a13.soap.ws.server.puc.sr/">
+          <soapenv:Header/>
+          <soapenv:Body>
+            <a13:getPersona>
+              <a13:token>${token}</a13:token>
+              <a13:sign>${sign}</a13:sign>
+              <a13:cuitRepresentada>${config_1.envs.cuit}</a13:cuitRepresentada>
+              <a13:idPersona>${cuit}</a13:idPersona>
+            </a13:getPersona>
+          </soapenv:Body>
+        </soapenv:Envelope>
+      `.trim();
+            const response = await axios_1.default.post(wsPadronUrl, requestXml, {
+                headers: {
+                    'Content-Type': 'text/xml',
+                    SOAPAction: '',
+                },
+                timeout: 10000,
+            });
+            const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
+                tagNameProcessors: [xml2js_1.processors.stripPrefix],
+                explicitArray: false,
+            });
+            const personaReturn = parsed.Envelope?.Body?.getPersonaResponse?.personaReturn;
+            if (!personaReturn) {
+                throw new microservices_1.RpcException({
+                    status: common_1.HttpStatus.BAD_REQUEST,
+                    message: 'No se encontró personaReturn en la respuesta de AFIP',
+                });
+            }
+            const datosGenerales = personaReturn.datosGenerales;
+            const domicilioFiscal = personaReturn.domicilioFiscal;
+            const regimenGeneral = personaReturn.datosRegimenGeneral;
+            return {
+                cuit: datosGenerales?.idPersona,
+                razonSocial: datosGenerales?.apellidoNombre,
+                tipoPersona: datosGenerales?.tipoPersona,
+                domicilio: domicilioFiscal?.direccion,
+                localidad: domicilioFiscal?.localidad,
+                provincia: domicilioFiscal?.idProvincia,
+                codigoPostal: domicilioFiscal?.codPostal,
+                condicionIVA: regimenGeneral?.impuestos?.idImpuesto === '30'
+                    ? 'Responsable Inscripto'
+                    : 'Otro',
+                ingresosBrutos: regimenGeneral?.impuestos?.find?.((i) => i.idImpuesto === '32')
+                    ?.descripcion || null,
+                inicioActividades: regimenGeneral?.fechaInscripcion,
+            };
+        }
+        catch (error) {
+            console.error('[ARCA GET CONTRIBUYENTE ERROR]', error);
+            throw new microservices_1.RpcException({
+                status: common_1.HttpStatus.BAD_REQUEST,
+                message: error.message || 'Error al consultar datos de padrón A13 en AFIP',
+            });
+        }
+    }
     async loginWithCuit(service = 'wsfex') {
         const certPath = path.resolve(config_1.envs.certPath);
         const keyPath = path.resolve(config_1.envs.privateKeyPath);

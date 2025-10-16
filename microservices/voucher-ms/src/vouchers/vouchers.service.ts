@@ -43,18 +43,27 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
     super();
   }
 
+  private _voucherTypeMap: Record<VoucherType, number> = {
+    [VoucherType.FACTURA_A]: 1,
+    [VoucherType.FACTURA_B]: 6,
+    [VoucherType.NOTA_CREDITO_A]: 3,
+    [VoucherType.NOTA_CREDITO_B]: 8,
+    [VoucherType.NOTA_DEBITO_A]: 2,
+    [VoucherType.NOTA_DEBITO_B]: 7,
+    [VoucherType.PRESUPUESTO]: 0,
+  };
   private async _generateAfipQr(voucher: any, contact: any): Promise<string> {
     const qrData = {
       ver: 1,
       fecha: new Date(voucher.emissionDate).toISOString().slice(0, 10),
       cuit: Number(voucher.issuerCuit ?? '20169658146'),
       ptoVta: voucher.pointOfSale,
-      tipoCmp: Number(voucher.typeCode ?? 1), // mapea VoucherType -> código AFIP
+      tipoCmp: this._voucherTypeMap[voucher.type as VoucherType] ?? 99,
       nroCmp: voucher.voucherNumber,
       importe: Number(voucher.totalAmount ?? 0),
       moneda: 'PES',
       ctz: 1,
-      tipoDocRec: contact?.documentTypeCode ?? 80, // 80 = CUIT, 96 = DNI
+      tipoDocRec: contact?.documentTypeCode, // 80 = CUIT, 96 = DNI
       nroDocRec: Number(contact?.documentNumber ?? 0),
       tipoCodAut: 'E',
       codAut: voucher.arcaCae,
@@ -475,6 +484,9 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
     }
 
     const qrBase64 = await this._generateAfipQr(voucher, contact);
+    const padronData = await firstValueFrom(
+      this.client.send({ cmd: 'arca_contribuyente_data' }, voucher.contactCuil),
+    );
 
     const showIva = [VoucherType.FACTURA_A, VoucherType.FACTURA_B].includes(
       voucher?.type,
@@ -573,10 +585,10 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
     <!-- Header -->
     <section class="hdr">
       <div class="brand">
-        <h2>${voucher?.issuerName || 'LOBO CARLOS ALBERTO'}</h2>
-        <p><b>Razón Social:</b> ${voucher?.issuerName || '-'}</p>
-        <p><b>Domicilio Comercial:</b> ${voucher?.issuerAddress || '-'}</p>
-        <p><b>Condición frente al IVA:</b> ${voucher?.issuerIvaCondition || '-'}</p>
+        <h2>${padronData?.razonSocial || 'LOBO CARLOS ALBERTO'}</h2>
+        <p><b>Razón Social:</b> ${padronData?.razonSocial || '-'}</p>
+        <p><b>Domicilio Comercial:</b> ${padronData?.domicilio || '-'} - ${padronData?.localidad}</p>
+        <p><b>Condición frente al IVA:</b> ${padronData?.condicionIVA || '-'}</p>
       </div>
 
       <div class="center">
@@ -589,9 +601,9 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
         <p><b>Punto de Venta:</b> ${voucher?.pointOfSale ?? '-'}</p>
         <p><b>Comp. Nro:</b> ${voucher?.voucherNumber ?? '-'}</p>
         <p><b>Fecha Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}</p>
-        <p><b>CUIT:</b> ${voucher?.issuerCuit ?? '-'}</p>
-        <p><b>Ingresos Brutos:</b> ${voucher?.issuerIibb ?? '-'}</p>
-        <p><b>Inicio Activ.:</b> ${voucher?.issuerStartDate ?? '-'}</p>
+        <p><b>CUIT:</b> ${padronData?.cuit || '-'}</p>
+        <p><b>Ingresos Brutos:</b> ${padronData?.ingresosBrutos || '-'}</p>
+        <p><b>Inicio Activ.:</b> ${padronData?.inicioActividades || '-'}</p>
       </div>
     </section>
 

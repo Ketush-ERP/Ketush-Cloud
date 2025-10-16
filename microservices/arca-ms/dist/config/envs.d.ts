@@ -13,4 +13,5 @@ export declare const envs: {
     wsfexWsdlProd: string;
     wsfeWsdlHomo: string;
     wsfeWsdlProd: string;
+    wsPadronA13Url: string;
 };

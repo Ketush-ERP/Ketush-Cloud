@@ -8,9 +8,13 @@ import { CreateVocuherDto } from './dto/create-voucher.dto';
 export class ArcaController {
   constructor(private readonly arcaService: ArcaService) {}
 
+  @MessagePattern({ cmd: 'arca_contribuyente_data' })
+  async getContribuyenteData(@Payload() cuit: number) {
+    return this.arcaService.getContribuyenteData(cuit);
+  }
+
   @MessagePattern({ cmd: 'arca_authorize' })
   async login() {
-    console.log('HOLA REALIZANDO AUTORIZAXION');
     return await this.arcaService.loginWithCuit('wsfe');
   }
 
@@ -25,7 +29,7 @@ export class ArcaController {
   }
 
   @MessagePattern({ cmd: 'arca_emit_invoice' })
-  async emitInvoice(@Payload() dto) {
+  async emitInvoice(@Payload() dto: CreateVocuherDto) {
     return await this.arcaService.emitVoucher(dto);
   }
 }

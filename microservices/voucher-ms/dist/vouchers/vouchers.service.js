@@ -45,18 +45,27 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
         super();
         this.client = client;
     }
+    _voucherTypeMap = {
+        [enum_1.VoucherType.FACTURA_A]: 1,
+        [enum_1.VoucherType.FACTURA_B]: 6,
+        [enum_1.VoucherType.NOTA_CREDITO_A]: 3,
+        [enum_1.VoucherType.NOTA_CREDITO_B]: 8,
+        [enum_1.VoucherType.NOTA_DEBITO_A]: 2,
+        [enum_1.VoucherType.NOTA_DEBITO_B]: 7,
+        [enum_1.VoucherType.PRESUPUESTO]: 0,
+    };
     async _generateAfipQr(voucher, contact) {
         const qrData = {
             ver: 1,
             fecha: new Date(voucher.emissionDate).toISOString().slice(0, 10),
             cuit: Number(voucher.issuerCuit ?? '20169658146'),
             ptoVta: voucher.pointOfSale,
-            tipoCmp: Number(voucher.typeCode ?? 1),
+            tipoCmp: this._voucherTypeMap[voucher.type] ?? 99,
             nroCmp: voucher.voucherNumber,
             importe: Number(voucher.totalAmount ?? 0),
             moneda: 'PES',
             ctz: 1,
-            tipoDocRec: contact?.documentTypeCode ?? 80,
+            tipoDocRec: contact?.documentTypeCode,
             nroDocRec: Number(contact?.documentNumber ?? 0),
             tipoCodAut: 'E',
             codAut: voucher.arcaCae,
@@ -384,6 +393,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 cod = '999';
         }
         const qrBase64 = await this._generateAfipQr(voucher, contact);
+        const padronData = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'arca_contribuyente_data' }, voucher.contactCuil));
         const showIva = [enum_1.VoucherType.FACTURA_A, enum_1.VoucherType.FACTURA_B].includes(voucher?.type);
         const ivaRateDefault = showIva ? 0.21 : 0;
         const productsHtml = (voucher?.products || [])
@@ -472,10 +482,10 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     <!-- Header -->
     <section class="hdr">
       <div class="brand">
-        <h2>${voucher?.issuerName || 'LOBO CARLOS ALBERTO'}</h2>
-        <p><b>Razón Social:</b> ${voucher?.issuerName || '-'}</p>
-        <p><b>Domicilio Comercial:</b> ${voucher?.issuerAddress || '-'}</p>
-        <p><b>Condición frente al IVA:</b> ${voucher?.issuerIvaCondition || '-'}</p>
+        <h2>${padronData?.razonSocial || 'LOBO CARLOS ALBERTO'}</h2>
+        <p><b>Razón Social:</b> ${padronData?.razonSocial || '-'}</p>
+        <p><b>Domicilio Comercial:</b> ${padronData?.domicilio || '-'} - ${padronData?.localidad}</p>
+        <p><b>Condición frente al IVA:</b> ${padronData?.condicionIVA || '-'}</p>
       </div>
 
       <div class="center">
@@ -488,9 +498,9 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
         <p><b>Punto de Venta:</b> ${voucher?.pointOfSale ?? '-'}</p>
         <p><b>Comp. Nro:</b> ${voucher?.voucherNumber ?? '-'}</p>
         <p><b>Fecha Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}</p>
-        <p><b>CUIT:</b> ${voucher?.issuerCuit ?? '-'}</p>
-        <p><b>Ingresos Brutos:</b> ${voucher?.issuerIibb ?? '-'}</p>
-        <p><b>Inicio Activ.:</b> ${voucher?.issuerStartDate ?? '-'}</p>
+        <p><b>CUIT:</b> ${padronData?.cuit || '-'}</p>
+        <p><b>Ingresos Brutos:</b> ${padronData?.ingresosBrutos || '-'}</p>
+        <p><b>Inicio Activ.:</b> ${padronData?.inicioActividades || '-'}</p>
       </div>
     </section>
 
