@@ -888,7 +888,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
       return await this.buildHtml({ voucher, contact, padronData });
     } catch (error) {
       throw new RpcException({
-        message: 'Error al generar el HTML del comprobante',
+        message: `Error al generar el HTML del comprobante: ${error}`,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
