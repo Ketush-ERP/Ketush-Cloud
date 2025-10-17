@@ -20,7 +20,7 @@ export default function InvoiceHeader({ invoice, onBack, onCreateNota }) {
     try {
       await downloadPdf.mutateAsync({
         voucherId: invoice.id,
-        factura: { numero: invoice.numero || invoice.id },
+        factura: { numero: invoice.numero || invoice.id, cae: invoice.arcaCae || "comprobante"},
       });
     } catch (error) {
       console.error("Error al descargar el PDF:", error);
