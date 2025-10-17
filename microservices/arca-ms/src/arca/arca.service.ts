@@ -53,7 +53,7 @@ export class ArcaService {
   // 🔹 Método para obtener los valores sin volver a loguear
   private _getCredentials() {
     const taFilesPath = path.resolve(envs.taFilesPath);
-    const cachePath = path.join(taFilesPath, `ta-wsfe.json`); // asumí que usas el servicio 'wsfe' para la cache
+    const cachePath = path.join(taFilesPath, `ta-wsfex.json`); // asumí que usas el servicio 'wsfex' para la cache
 
     if (!fs.existsSync(cachePath)) {
       throw new Error(
@@ -78,42 +78,48 @@ export class ArcaService {
     };
   }
 
-  async getContribuyenteData(cuit: number) {
+  async getContribuyenteData() {
     try {
-      const { token, sign } = this._getCredentials(); // reutilizamos TA ya obtenido
+      const { token, sign } = await this.loginWithCuit('ws_sr_padron_a13');
 
-      const wsPadronUrl = envs.wsPadronA13Url.replace('?WSDL', '');
+      const wsPadronUrl = envs.wsPadronA13UrlProd.replace('?WSDL', '');
 
       const requestXml = `
-        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                          xmlns:a13="http://a13.soap.ws.server.puc.sr/">
-          <soapenv:Header/>
-          <soapenv:Body>
-            <a13:getPersona>
-              <a13:token>${token}</a13:token>
-              <a13:sign>${sign}</a13:sign>
-              <a13:cuitRepresentada>${envs.cuit}</a13:cuitRepresentada>
-              <a13:idPersona>${cuit}</a13:idPersona>
-            </a13:getPersona>
-          </soapenv:Body>
-        </soapenv:Envelope>
-      `.trim();
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:a13="http://a13.soap.ws.server.puc.sr/">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <a13:getPersona>
+      <token>${token}</token>
+      <sign>${sign}</sign>
+      <cuitRepresentada>${envs.cuit}</cuitRepresentada>
+      <idPersona>${envs.cuit}</idPersona>
+    </a13:getPersona>
+  </soapenv:Body>
+</soapenv:Envelope>
+`.trim();
 
       const response = await axios.post(wsPadronUrl, requestXml, {
         headers: {
-          'Content-Type': 'text/xml',
+          'Content-Type': 'text/xml; charset=utf-8',
           SOAPAction: '',
         },
-        timeout: 10000,
+        responseType: 'arraybuffer', // forzar a recibir como buffer
+        timeout: 30000,
       });
 
-      const parsed = await parseStringPromise(response.data, {
+      // Convertir buffer a string UTF-8
+      const responseUtf8 = Buffer.from(response.data, 'binary').toString(
+        'utf-8',
+      );
+
+      const parsed = await parseStringPromise(responseUtf8, {
         tagNameProcessors: [processors.stripPrefix],
         explicitArray: false,
       });
 
       const personaReturn =
-        parsed.Envelope?.Body?.getPersonaResponse?.personaReturn;
+        parsed.Envelope?.Body?.getPersonaResponse?.personaReturn?.persona;
 
       if (!personaReturn) {
         throw new RpcException({
@@ -122,29 +128,8 @@ export class ArcaService {
         });
       }
 
-      const datosGenerales = personaReturn.datosGenerales;
-      const domicilioFiscal = personaReturn.domicilioFiscal;
-      const regimenGeneral = personaReturn.datosRegimenGeneral;
-
-      return {
-        cuit: datosGenerales?.idPersona,
-        razonSocial: datosGenerales?.apellidoNombre,
-        tipoPersona: datosGenerales?.tipoPersona,
-        domicilio: domicilioFiscal?.direccion,
-        localidad: domicilioFiscal?.localidad,
-        provincia: domicilioFiscal?.idProvincia,
-        codigoPostal: domicilioFiscal?.codPostal,
-        condicionIVA:
-          regimenGeneral?.impuestos?.idImpuesto === '30'
-            ? 'Responsable Inscripto'
-            : 'Otro',
-        ingresosBrutos:
-          regimenGeneral?.impuestos?.find?.((i) => i.idImpuesto === '32')
-            ?.descripcion || null,
-        inicioActividades: regimenGeneral?.fechaInscripcion,
-      };
+      return personaReturn;
     } catch (error) {
-      console.error('[ARCA GET CONTRIBUYENTE ERROR]', error);
       throw new RpcException({
         status: HttpStatus.BAD_REQUEST,
         message:
@@ -331,7 +316,6 @@ export class ArcaService {
         },
         timeout: 10000,
       });
-      console.log(response.data);
 
       const parsed = await parseStringPromise(response.data, {
         tagNameProcessors: [processors.stripPrefix],
@@ -505,7 +489,6 @@ export class ArcaService {
         parsed.Envelope?.Body?.FECAESolicitarResponse?.FECAESolicitarResult;
       const detResp = result?.FeDetResp?.FECAEDetResponse;
       const err = result?.Errors?.Err;
-
       let observations: Array<{ Code: string; Msg: string }> = [];
       if (detResp?.Observaciones?.Obs) {
         if (Array.isArray(detResp.Observaciones.Obs)) {
@@ -538,7 +521,6 @@ export class ArcaService {
         pointOfSale: dto.pointOfSale,
       };
     } catch (error) {
-      console.error('[ARCA ERROR]', error);
       return {
         status: `[ARCA_EMIT] Problema con cargar el comprobante en ARCA: ${error}`,
         message: error.message || 'Error al emitir comprobante',

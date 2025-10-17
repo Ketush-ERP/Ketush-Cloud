@@ -9,18 +9,7 @@ export declare class ArcaService {
     private _ivaConditionMap;
     private _getVoucherCode;
     private _getCredentials;
-    getContribuyenteData(cuit: number): Promise<{
-        cuit: any;
-        razonSocial: any;
-        tipoPersona: any;
-        domicilio: any;
-        localidad: any;
-        provincia: any;
-        codigoPostal: any;
-        condicionIVA: string;
-        ingresosBrutos: any;
-        inicioActividades: any;
-    }>;
+    getContribuyenteData(): Promise<any>;
     loginWithCuit(service?: string): Promise<{
         token: string;
         sign: string;

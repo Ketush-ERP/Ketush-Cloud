@@ -18,7 +18,8 @@ const envsSchema = joi
     WSDL_WSFEX_PROD: joi.string().required(),
     WSDL_WSFE_HOM: joi.string().required(),
     WSDL_WSFE_PROD: joi.string().required(),
-    WS_PADRON_A13_URL: joi.string().required(),
+    WS_PADRON_A13_URL_HOM: joi.string().required(),
+    WS_PADRON_A13_URL_PROD: joi.string().required(),
 })
     .unknown(true);
 const { error, value } = envsSchema.validate({
@@ -43,6 +44,7 @@ exports.envs = {
     wsfexWsdlProd: envVars.WSDL_WSFEX_PROD,
     wsfeWsdlHomo: envVars.WSDL_WSFE_HOM,
     wsfeWsdlProd: envVars.WSDL_WSFE_PROD,
-    wsPadronA13Url: envVars.WS_PADRON_A13_URL,
+    wsPadronA13UrlProd: envVars.WS_PADRON_A13_URL_PROD,
+    wsPadronA13UrlHomo: envVars.WS_PADRON_A13_URL_HOM,
 };
 //# sourceMappingURL=envs.js.map

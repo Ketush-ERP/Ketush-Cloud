@@ -9,8 +9,8 @@ export class ArcaController {
   constructor(private readonly arcaService: ArcaService) {}
 
   @MessagePattern({ cmd: 'arca_contribuyente_data' })
-  async getContribuyenteData(@Payload() cuit: number) {
-    return this.arcaService.getContribuyenteData(cuit);
+  async getContribuyenteData() {
+    return this.arcaService.getContribuyenteData();
   }
 
   @MessagePattern({ cmd: 'arca_authorize' })

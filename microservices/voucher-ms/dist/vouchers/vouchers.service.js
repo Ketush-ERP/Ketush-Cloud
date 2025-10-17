@@ -59,16 +59,16 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             ver: 1,
             fecha: new Date(voucher.emissionDate).toISOString().slice(0, 10),
             cuit: Number(voucher.issuerCuit ?? '20169658146'),
-            ptoVta: voucher.pointOfSale,
+            ptoVta: Number(voucher.pointOfSale),
             tipoCmp: this._voucherTypeMap[voucher.type] ?? 99,
-            nroCmp: voucher.voucherNumber,
+            nroCmp: Number(voucher.voucherNumber),
             importe: Number(voucher.totalAmount ?? 0),
             moneda: 'PES',
             ctz: 1,
-            tipoDocRec: contact?.documentTypeCode,
+            tipoDocRec: Number(contact?.documentTypeCode ?? 80),
             nroDocRec: Number(contact?.documentNumber ?? 0),
             tipoCodAut: 'E',
-            codAut: voucher.arcaCae,
+            codAut: Number(voucher.arcaCae ?? 0),
         };
         const base64Json = Buffer.from(JSON.stringify(qrData)).toString('base64');
         const url = `https://www.afip.gob.ar/fe/qr/?p=${base64Json}`;
@@ -344,7 +344,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             };
         }
     }
-    async buildHtml({ voucher, contact }) {
+    async buildHtml({ voucher, contact, padronData }) {
         const formatDate = (d) => new Date(d).toLocaleDateString('es-AR');
         const money = (n) => new Intl.NumberFormat('es-AR', {
             minimumFractionDigits: 2,
@@ -393,7 +393,6 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 cod = '999';
         }
         const qrBase64 = await this._generateAfipQr(voucher, contact);
-        const padronData = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'arca_contribuyente_data' }, voucher.contactCuil));
         const showIva = [enum_1.VoucherType.FACTURA_A, enum_1.VoucherType.FACTURA_B].includes(voucher?.type);
         const ivaRateDefault = showIva ? 0.21 : 0;
         const productsHtml = (voucher?.products || [])
@@ -408,7 +407,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
           <td class="t-left">${idx + 1}</td>
           <td class="t-left">${p.description || '-'}</td>
           <td class="t-right">${numberAr(q)}</td>
-          <td class="t-center">${p.unit || '-'}</td>
+          <td class="t-center">${p.unit || 'unidades'}</td>
           <td class="t-right">${numberAr(up)}</td>
           <td class="t-center">0,00</td>
           <td class="t-right">${numberAr(lineSubtotal)}</td>
@@ -420,173 +419,334 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             ? `<tr><td>IVA 21%</td><td class="t-right">${money(voucher?.ivaAmount)}</td></tr>`
             : '';
         const netoBlock = showIva
-            ? `<tr><td>Importe Neto Gravado</td><td class="t-right">${money(subtotal)}</td></tr>`
+            ? `<tr><td>Subtotal</td><td class="t-right">${money(subtotal)}</td></tr>`
             : '';
         return `
-  <html lang="es">
+ <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${titulo} ${letra}</title>
     <style>
-      * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; color: #000; }
-      html, body { margin: 0; padding: 0; }
-      @page { size: A4; margin: 12mm; }
-      body { font-size: 12px; line-height: 1.3; }
+      * {
+        box-sizing: border-box;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #000;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      @page {
+        size: A4;
+        margin: 12mm;
+      }
+      body {
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .container {
+        max-width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: 0.1fr 1fr 0.5fr 2fr 1fr;
+        gap: 10px;
+        padding: 0px 20px;
+        margin: auto;
+      }
 
       /* Utilidades */
-      .t-left{ text-align:left; } .t-center{ text-align:center; } .t-right{ text-align:right; }
-      .bold{ font-weight:700; } .w-100{ width:100%; }
-      .mt-6{ margin-top:6px; } .mt-12{ margin-top:12px; }
+      .t-left {
+        text-align: left;
+      }
+      .t-center {
+        text-align: center;
+      }
+      .t-right {
+        text-align: right;
+      }
+      .bold {
+        font-weight: 700;
+      }
+      .w-100 {
+        width: 100%;
+      }
+      .mt-6 {
+        margin-top: 6px;
+      }
+      .mt-12 {
+        margin-top: 12px;
+      }
 
       /* Header */
-      .hdr { display: grid; grid-template-columns: 1fr 90px 1fr; gap: 8px; align-items: stretch; }
-      .hdr .brand { border: 1px solid #000; padding: 8px; }
-      .hdr .brand h2 { font-size: 20px; margin: 0 0 4px 0; }
-      .hdr .center { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #000; }
-      .hdr .center .letter { font-size: 42px; font-weight: 700; line-height: 1; }
-      .hdr .center .cod { font-size: 11px; margin-top: 2px; }
-      .hdr .right { border: 1px solid #000; padding: 8px; }
-      .hdr .right h3 { text-align: center; font-size: 18px; margin: 0 0 6px 0; }
+      .hdr {
+        display: grid;
+        grid-template-columns: 1fr 90px 1fr;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .hdr .brand {
+        border: 1px solid #000;
+        padding: 8px;
+      }
+      .hdr .brand h2 {
+        font-size: 20px;
+        margin: 0 0 4px 0;
+      }
+      .hdr .center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #000;
+      }
+      .hdr .center .letter {
+        font-size: 42px;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .hdr .center .cod {
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .hdr .right {
+        border: 1px solid #000;
+        padding: 8px;
+      }
+      .hdr .right h3 {
+        text-align: left;
+        font-weight: 700;
+        font-size: 18px;
+        margin: 0 0 6px 0;
+      }
 
       /* Band */
-      .band { display: flex; justify-content: space-between; gap: 8px; border: 1px solid #000; padding: 6px; }
+      .band {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        border: 1px solid #000;
+        padding: 6px;
+      }
 
       /* Client */
-      .client { border: 1px solid #000; padding: 8px; margin-top: 8px; }
-      .client-row { display: grid; grid-template-columns: 30% 70%; gap: 8px; margin-top: 4px; }
+      .client {
+        border: 1px solid #000;
+        padding: 8px;
+        margin-top: 8px;
+      }
+      .client-row {
+        display: grid;
+        grid-template-columns: 50% 50%;
+        gap: 8px;
+        margin-top: 4px;
+      }
 
       /* Tables */
-      table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-      th, td { border: 1px solid #000; padding: 6px; }
-      th { font-weight: 700; background: #f2f2f2; }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        border: 1px solid #000;
+        padding: 6px;
+      }
+      th {
+        font-weight: 700;
+        background: #f2f2f2;
+      }
 
       /* Totals */
-      .totals { width: 50%; margin-left: auto; border: 1px solid #000; margin-top: 12px; }
-      .totals td { padding: 6px; }
-      .totals tr td:first-child { font-weight: 700; }
-      .totals tr:last-child td { font-size: 14px; font-weight: 700; background: #f2f2f2; }
+      .totals {
+        width: 100%;
+        margin-left: auto;
+        border: 1px solid #000;
+        margin-top: 50px;
+      }
+      .totals td {
+        padding: 6px;
+      }
+      .totals tr td:first-child {
+        font-weight: 700;
+      }
+      .totals tr:last-child td {
+        font-size: 14px;
+        font-weight: 700;
+        background: #f2f2f2;
+      }
 
       /* Footer */
-      .foot { display: grid; grid-template-columns: 2fr 1.5fr; gap: 8px; margin-top: 12px; }
-      .foot-note { font-size: 10px; font-style: italic; margin-top: 6px; }
-      .qr { text-align: center; margin-top: 8px; }
+      .foot {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .foot-note {
+        font-size: 10px;
+        font-style: italic;
+        margin-top: 6px;
+      }
+      .qr {
+        text-align: center;
+        margin-top: 8px;
+      }
 
-      .copy-title { text-align: center; font-weight: 700; border: 1px solid #000; border-bottom: 0; padding: 6px; }
+      .copy-title {
+        text-align: center;
+        font-weight: 700;
+        border: 1px solid #000;
+        border-bottom: 0;
+        padding: 6px;
+      }
     </style>
   </head>
   <body>
-    <div class="copy-title">ORIGINAL</div>
+    <main class="container">
+      <div class="copy-title">ORIGINAL</div>
 
-    <!-- Header -->
-    <section class="hdr">
-      <div class="brand">
-        <h2>${padronData?.razonSocial || 'LOBO CARLOS ALBERTO'}</h2>
-        <p><b>Razón Social:</b> ${padronData?.razonSocial || '-'}</p>
-        <p><b>Domicilio Comercial:</b> ${padronData?.domicilio || '-'} - ${padronData?.localidad}</p>
-        <p><b>Condición frente al IVA:</b> ${padronData?.condicionIVA || '-'}</p>
-      </div>
+      <!-- Header -->
+      <section class="hdr">
+        <div class="brand">
+          <h2>${padronData?.razonSocial || 'LOBO CARLOS ALBERTO'}</h2>
+          <p>
+            <b>Razón Social:</b> ${padronData?.razonSocial || 'LOBO CARLOS ALBERTO'}
+          </p>
+          <p>
+            <b>Domicilio Comercial:</b> ${padronData?.domicilio[0].direccion || '-'} - ${padronData?.domicilio[0].localidad}
+          </p>
+          <p>
+            <b>Condición frente al IVA:</b> ${padronData?.condicionIVA || 'Responsable Inscripto'}
+          </p>
+        </div>
 
-      <div class="center">
-        <div class="letter">${letra}</div>
-        <div class="cod">COD. ${cod}</div>
-      </div>
+        <div class="center">
+          <div class="letter">${letra}</div>
+          <div class="cod">COD. ${cod}</div>
+        </div>
 
-      <div class="right">
-        <h3>${titulo}</h3>
-        <p><b>Punto de Venta:</b> ${voucher?.pointOfSale ?? '-'}</p>
-        <p><b>Comp. Nro:</b> ${voucher?.voucherNumber ?? '-'}</p>
-        <p><b>Fecha Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}</p>
-        <p><b>CUIT:</b> ${padronData?.cuit || '-'}</p>
-        <p><b>Ingresos Brutos:</b> ${padronData?.ingresosBrutos || '-'}</p>
-        <p><b>Inicio Activ.:</b> ${padronData?.inicioActividades || '-'}</p>
-      </div>
-    </section>
+        <div class="right">
+          <h3>${titulo}</h3>
+          <p><b>Punto de Venta:</b> ${voucher?.pointOfSale ?? '-'}</p>
+          <p><b>Comp. Nro:</b> ${voucher?.voucherNumber ?? '-'}</p>
+          <p>
+            <b>Fecha Emisión:</b> ${voucher?.emissionDate ? formatDate(voucher.emissionDate) : '-'}
+          </p>
+          <p><b>CUIT:</b> ${padronData?.idPersona || '-'}</p>
+          <p>
+            <b>Ingresos Brutos:</b> ${padronData?.ingresosBrutos || '270197035'}
+          </p>
+          <p>
+            <b>Inicio Activ.:</b> ${padronData?.inicioActividades || '01/04/2000'}
+          </p>
+        </div>
+      </section>
 
-    <!-- Period -->
-    <section class="band mt-12">
-      <div><b>Período Desde:</b> ${voucher?.periodFrom ? formatDate(voucher.periodFrom) : formatDate(voucher.emissionDate)}</div>
-      <div><b>Hasta:</b> ${voucher?.periodTo ? formatDate(voucher.periodTo) : formatDate(voucher.emissionDate)}</div>
-      <div><b>Vto. Pago:</b> ${voucher?.dueDate ? formatDate(voucher.dueDate) : formatDate(voucher.emissionDate)}</div>
-    </section>
+      <!-- Client -->
+      <section class="client">
+        <div class="client-row">
+          <div><b>CUIT/DNI:</b> ${contact?.documentNumber || '-'}</div>
+          <div><b>Cliente:</b> ${contact?.name || '-'}</div>
+        </div>
+        <div class="client-row">
+          <div><b>IVA:</b> ${contact?.ivaCondition || '-'}</div>
+          <div><b>Domicilio:</b> ${contact?.address || '-'}</div>
+        </div>
+        ${letra !== 'P'
+            ? `
+        <div class="client-row">
+          <div>
+            <b>Condición de venta:</b> ${voucher.conditionPayment === 'CREDIT'
+                ? 'Cuenta Corriente'
+                : 'Contado'}
+          </div>
+          <div></div>
+        </div>
+        `
+            : ''}
+      </section>
 
-    <!-- Client -->
-    <section class="client">
-      <div class="client-row">
-        <div><b>CUIT/DNI:</b> ${contact?.documentNumber || '-'}</div>
-        <div><b>Cliente:</b> ${contact?.name || '-'}</div>
-      </div>
-      <div class="client-row">
-        <div><b>IVA:</b> ${contact?.ivaCondition || '-'}</div>
-        <div><b>Domicilio:</b> ${contact?.address || '-'}</div>
-      </div>
-      ${letra !== 'P' ? `<div class="client-row"><div><b>Condición de venta:</b> ${voucher.conditionPayment === 'CREDIT' ? 'Cuenta Corriente' : 'Contado'}</div><div></div></div>` : ''}
-    </section>
-
-    <!-- Items -->
-    <section>
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Producto / Servicio</th>
-            <th>Cantidad</th>
-            <th>U. Medida</th>
-            <th>Precio Unit.</th>
-            <th>% Bonif</th>
-            <th>Subtotal</th>
-            <th>IVA</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${productsHtml ||
+      <!-- Items -->
+      <section>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto / Servicio</th>
+              <th>Cantidad</th>
+              <th>U. Medida</th>
+              <th>Precio Unit.</th>
+              <th>% Bonif</th>
+              <th>Subtotal</th>
+              <th>IVA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productsHtml ||
             `
             <tr>
               <td class="t-left">-</td>
               <td class="t-left">-</td>
               <td class="t-right">0,00</td>
-              <td class="t-center">-</td>
+              <td class="t-center">unidades</td>
               <td class="t-right">0,00</td>
               <td class="t-center">0,00</td>
               <td class="t-right">0,00</td>
               <td class="t-center">-</td>
-            </tr>`}
+            </tr>
+            `}
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Totals -->
+      <table class="totals">
+        <tbody>
+          ${netoBlock} ${ivaBlock}
+          <tr>
+            <td>Total</td>
+            <td class="t-right">$ ${money(total)}</td>
+          </tr>
         </tbody>
       </table>
-    </section>
 
-    <!-- Totals -->
-    <table class="totals">
-      <tbody>
-        ${netoBlock}
-        ${ivaBlock}
-        <tr><td>Total</td><td class="t-right">$ ${money(total)}</td></tr>
-        <tr><td>Pagado</td><td class="t-right">$ ${money(paid)}</td></tr>
-        <tr><td>Saldo</td><td class="t-right">$ ${paid > total ? 0 : money(remaining)}</td></tr>
-      </tbody>
-    </table>
-
-    <!-- Footer -->
-    <section class="foot">
-      <div>
-        ${letra === 'P' ? '<div class="bold">Comprobante Autorizado</div>' : '<div class="bold">Comprobante No Autorizado</div>'}
-        <p class="foot-note">Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación</p>
-        <div class="qr"><img src="${qrBase64}" width="120"/></div>
-      </div>
-      <div>
-        <table>
-          <tr><td><b>CAE N°</b></td><td class="t-right">${voucher?.arcaCae || '-'}</td></tr>
-          <tr><td><b>Vto. CAE</b></td><td class="t-right">${voucher?.arcaDueDate || '-'}</td></tr>
-        </table>
-        <div class="t-center mt-6">Pág 1/1</div>
-      </div>
-    </section>
+      <!-- Footer -->
+      <section class="foot">
+        <div>
+          ${letra === 'P' ? '<div class="bold">Comprobante Autorizado</div>' : '<div class="bold">Comprobante No Autorizado</div>'}
+          <p class="foot-note">
+            Esta Administración Federal no se responsabiliza por los datos
+            ingresados en el detalle de la operación
+          </p>
+          <div class="qr"><img src="${qrBase64}" width="200" /></div>
+        </div>
+        <div>
+          <table>
+            <tr>
+              <td><b>CAE N°</b></td>
+              <td class="t-right">${voucher?.arcaCae || '-'}</td>
+            </tr>
+            <tr>
+              <td><b>Vto. CAE</b></td>
+              <td class="t-right">${voucher?.arcaDueDate || '-'}</td>
+            </tr>
+          </table>
+          <div class="t-center mt-6">Pág 1/1</div>
+        </div>
+      </section>
+    </main>
   </body>
-  </html>`;
+</html>
+`;
     }
     async generateVoucherHtml(voucherId) {
         try {
+            const padronData = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'arca_contribuyente_data' }, {}));
             const voucher = await this.eVoucher.findUnique({
                 where: { id: voucherId },
                 include: { products: true, Payments: true },
@@ -602,10 +762,9 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                     console.warn(`[WARN] No se pudo obtener el contacto: ${err.message}`);
                 }
             }
-            return await this.buildHtml({ voucher, contact });
+            return await this.buildHtml({ voucher, contact, padronData });
         }
         catch (error) {
-            console.error(`[ERROR] Error al generar el HTML del comprobante: ${error.message}`);
             throw new microservices_1.RpcException('Error al generar el HTML del comprobante');
         }
     }

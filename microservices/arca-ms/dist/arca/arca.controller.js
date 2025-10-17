@@ -22,8 +22,8 @@ let ArcaController = class ArcaController {
     constructor(arcaService) {
         this.arcaService = arcaService;
     }
-    async getContribuyenteData(cuit) {
-        return this.arcaService.getContribuyenteData(cuit);
+    async getContribuyenteData() {
+        return this.arcaService.getContribuyenteData();
     }
     async login() {
         return await this.arcaService.loginWithCuit('wsfe');
@@ -38,9 +38,8 @@ let ArcaController = class ArcaController {
 exports.ArcaController = ArcaController;
 __decorate([
     (0, microservices_1.MessagePattern)({ cmd: 'arca_contribuyente_data' }),
-    __param(0, (0, microservices_1.Payload)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ArcaController.prototype, "getContribuyenteData", null);
 __decorate([

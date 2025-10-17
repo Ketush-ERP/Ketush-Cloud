@@ -51,7 +51,7 @@ let ArcaService = class ArcaService {
     }
     _getCredentials() {
         const taFilesPath = path.resolve(config_1.envs.taFilesPath);
-        const cachePath = path.join(taFilesPath, `ta-wsfe.json`);
+        const cachePath = path.join(taFilesPath, `ta-wsfex.json`);
         if (!fs.existsSync(cachePath)) {
             throw new Error('No hay credenciales cargadas. Ejecuta loginWithCuit primero.');
         }
@@ -67,63 +67,47 @@ let ArcaService = class ArcaService {
             expirationTime: expiration.toISOString(),
         };
     }
-    async getContribuyenteData(cuit) {
+    async getContribuyenteData() {
         try {
-            const { token, sign } = this._getCredentials();
-            const wsPadronUrl = config_1.envs.wsPadronA13Url.replace('?WSDL', '');
+            const { token, sign } = await this.loginWithCuit('ws_sr_padron_a13');
+            const wsPadronUrl = config_1.envs.wsPadronA13UrlProd.replace('?WSDL', '');
             const requestXml = `
-        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                          xmlns:a13="http://a13.soap.ws.server.puc.sr/">
-          <soapenv:Header/>
-          <soapenv:Body>
-            <a13:getPersona>
-              <a13:token>${token}</a13:token>
-              <a13:sign>${sign}</a13:sign>
-              <a13:cuitRepresentada>${config_1.envs.cuit}</a13:cuitRepresentada>
-              <a13:idPersona>${cuit}</a13:idPersona>
-            </a13:getPersona>
-          </soapenv:Body>
-        </soapenv:Envelope>
-      `.trim();
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                  xmlns:a13="http://a13.soap.ws.server.puc.sr/">
+  <soapenv:Header/>
+  <soapenv:Body>
+    <a13:getPersona>
+      <token>${token}</token>
+      <sign>${sign}</sign>
+      <cuitRepresentada>${config_1.envs.cuit}</cuitRepresentada>
+      <idPersona>${config_1.envs.cuit}</idPersona>
+    </a13:getPersona>
+  </soapenv:Body>
+</soapenv:Envelope>
+`.trim();
             const response = await axios_1.default.post(wsPadronUrl, requestXml, {
                 headers: {
-                    'Content-Type': 'text/xml',
+                    'Content-Type': 'text/xml; charset=utf-8',
                     SOAPAction: '',
                 },
-                timeout: 10000,
+                responseType: 'arraybuffer',
+                timeout: 30000,
             });
-            const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
+            const responseUtf8 = Buffer.from(response.data, 'binary').toString('utf-8');
+            const parsed = await (0, xml2js_1.parseStringPromise)(responseUtf8, {
                 tagNameProcessors: [xml2js_1.processors.stripPrefix],
                 explicitArray: false,
             });
-            const personaReturn = parsed.Envelope?.Body?.getPersonaResponse?.personaReturn;
+            const personaReturn = parsed.Envelope?.Body?.getPersonaResponse?.personaReturn?.persona;
             if (!personaReturn) {
                 throw new microservices_1.RpcException({
                     status: common_1.HttpStatus.BAD_REQUEST,
                     message: 'No se encontró personaReturn en la respuesta de AFIP',
                 });
             }
-            const datosGenerales = personaReturn.datosGenerales;
-            const domicilioFiscal = personaReturn.domicilioFiscal;
-            const regimenGeneral = personaReturn.datosRegimenGeneral;
-            return {
-                cuit: datosGenerales?.idPersona,
-                razonSocial: datosGenerales?.apellidoNombre,
-                tipoPersona: datosGenerales?.tipoPersona,
-                domicilio: domicilioFiscal?.direccion,
-                localidad: domicilioFiscal?.localidad,
-                provincia: domicilioFiscal?.idProvincia,
-                codigoPostal: domicilioFiscal?.codPostal,
-                condicionIVA: regimenGeneral?.impuestos?.idImpuesto === '30'
-                    ? 'Responsable Inscripto'
-                    : 'Otro',
-                ingresosBrutos: regimenGeneral?.impuestos?.find?.((i) => i.idImpuesto === '32')
-                    ?.descripcion || null,
-                inicioActividades: regimenGeneral?.fechaInscripcion,
-            };
+            return personaReturn;
         }
         catch (error) {
-            console.error('[ARCA GET CONTRIBUYENTE ERROR]', error);
             throw new microservices_1.RpcException({
                 status: common_1.HttpStatus.BAD_REQUEST,
                 message: error.message || 'Error al consultar datos de padrón A13 en AFIP',
@@ -264,7 +248,6 @@ let ArcaService = class ArcaService {
                 },
                 timeout: 10000,
             });
-            console.log(response.data);
             const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
                 tagNameProcessors: [xml2js_1.processors.stripPrefix],
                 explicitArray: false,
@@ -446,7 +429,6 @@ let ArcaService = class ArcaService {
             };
         }
         catch (error) {
-            console.error('[ARCA ERROR]', error);
             return {
                 status: `[ARCA_EMIT] Problema con cargar el comprobante en ARCA: ${error}`,
                 message: error.message || 'Error al emitir comprobante',
