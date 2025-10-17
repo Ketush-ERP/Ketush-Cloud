@@ -862,9 +862,16 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
 
   async generateVoucherHtml(voucherId: string): Promise<string> {
     try {
-      const padronData = await firstValueFrom(
-        this.client.send({ cmd: 'arca_contribuyente_data' }, {}),
-      );
+      let contact = null;
+
+      let padronData = null;
+      try {
+        padronData = await firstValueFrom(
+          this.client.send({ cmd: 'arca_contribuyente_data' }, {}),
+        );
+      } catch (err) {
+        console.warn(`[WARN] No se pudo obtener el padron: ${err.message}`);
+      }
 
       const voucher = await this.eVoucher.findUnique({
         where: { id: voucherId },
@@ -872,8 +879,6 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
       });
 
       if (!voucher) throw new Error('No se encontró el comprobante');
-
-      let contact = null;
 
       if (voucher.contactId) {
         try {
@@ -887,7 +892,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
 
       return await this.buildHtml({ voucher, contact, padronData });
     } catch (error) {
-      console.log(error);
+      console.log('ERRORRR', error);
       throw new RpcException({
         message: `Error al generar el HTML del comprobante: ${error}`,
         status: HttpStatus.INTERNAL_SERVER_ERROR,
