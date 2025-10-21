@@ -138,7 +138,7 @@ export class ArcaService {
     }
   }
 
-  async loginWithCuit(service = 'wsfex'): Promise<{
+  async loginWithCuit(service = 'wsfex1'): Promise<{
     token: string;
     sign: string;
     expirationTime: string;
