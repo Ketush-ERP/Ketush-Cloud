@@ -9,51 +9,51 @@ services:
       - ketshup-app
     restart: always
 
-  client-gateway-ketush:
-    image: client-gateway-ketush
-    build:
-      context: ./client-gateway
-      dockerfile: dockerfile.prod
-    ports:
-      - "4100:4100"
-    environment:
-      - PORT=4100
-      - NATS_SERVERS=nats://nats-servers:4222
-    depends_on:
-      - nats-servers
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  # client-gateway-ketush:
+  #   image: client-gateway-ketush
+  #   build:
+  #     context: ./client-gateway
+  #     dockerfile: dockerfile.prod
+  #   ports:
+  #     - "4100:4100"
+  #   environment:
+  #     - PORT=4100
+  #     - NATS_SERVERS=nats://nats-servers:4222
+  #   depends_on:
+  #     - nats-servers
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
-  arca-ms-ketush:
-    image: arca-ms-ketush
-    build:
-      context: ./microservices/arca-ms
-      dockerfile: dockerfile.prod
-    environment:
-      - PORT=3008
+  # arca-ms-ketush:
+  #   image: arca-ms-ketush
+  #   build:
+  #     context: ./microservices/arca-ms
+  #     dockerfile: dockerfile.prod
+  #   environment:
+  #     - PORT=3008
 
-      - NATS_SERVERS=nats://nats-servers:4222
+  #     - NATS_SERVERS=nats://nats-servers:4222
 
-      # - CERT_PATH=./certs/test/Ketush.crt
-      # - PRIVATE_KEY_PATH=./certs/test/private.key
-      # - TA_FILES_PATH=./data/test
-      - CERT_PATH=./certs/prod/Ketush.crt
-      - PRIVATE_KEY_PATH=./certs/prod/private.key
-      - TA_FILES_PATH=./data/prod
-      - CUIT=20169658146
-      - PROD=false
+  #     # - CERT_PATH=./certs/test/Ketush.crt
+  #     # - PRIVATE_KEY_PATH=./certs/test/private.key
+  #     # - TA_FILES_PATH=./data/test
+  #     - CERT_PATH=./certs/prod/Ketush.crt
+  #     - PRIVATE_KEY_PATH=./certs/prod/private.key
+  #     - TA_FILES_PATH=./data/prod
+  #     - CUIT=20169658146
+  #     - PROD=false
 
-      # WSDLs
-      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
-      - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
-      - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
-      - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
-      - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
-      - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  #     # WSDLs
+  #     - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
+  #     - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
+  #     - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
+  #     - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
+  #     - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
+  #     - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
   auth-db:
     image: postgres:15-alpine
@@ -137,20 +137,20 @@ services:
     restart: unless-stopped
     networks:
       - ketshup-app
-  # voucher-ms-ketush:
-  #   image: voucher-ms-ketush
-  #   build:
-  #     context: ./microservices/voucher-ms
-  #     dockerfile: dockerfile.prod
-  #   environment:
-  #     - NATS_SERVERS=nats://nats-servers:4222
-  #     - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
-  #     - PORT=3006
-  #   depends_on:
-  #     - voucher-db
-  #   restart: unless-stopped
-  #   networks:
-  #     - ketshup-app
+  voucher-ms-ketush:
+    image: voucher-ms-ketush
+    build:
+      context: ./microservices/voucher-ms
+      dockerfile: dockerfile.prod
+    environment:
+      - NATS_SERVERS=nats://nats-servers:4222
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
+      - PORT=3006
+    depends_on:
+      - voucher-db
+    restart: unless-stopped
+    networks:
+      - ketshup-app
 
   voucher-db:
     image: postgres:15-alpine

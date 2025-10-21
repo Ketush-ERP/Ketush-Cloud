@@ -53,7 +53,7 @@ export class ArcaService {
   // 🔹 Método para obtener los valores sin volver a loguear
   private _getCredentials() {
     const taFilesPath = path.resolve(envs.taFilesPath);
-    const cachePath = path.join(taFilesPath, `ta-wsfex.json`); // asumí que usas el servicio 'wsfex' para la cache
+    const cachePath = path.join(taFilesPath, `ta-wsfe.json`); // asumí que usas el servicio 'wsfex' para la cache
 
     if (!fs.existsSync(cachePath)) {
       throw new Error(
@@ -138,7 +138,7 @@ export class ArcaService {
     }
   }
 
-  async loginWithCuit(service = 'wsfex1'): Promise<{
+  async loginWithCuit(service = 'wsfe'): Promise<{
     token: string;
     sign: string;
     expirationTime: string;
@@ -171,6 +171,8 @@ export class ArcaService {
         : 'No se pudo obtener el error de OpenSSL';
       throw new Error(`OpenSSL no está disponible: ${errMsg}`);
     }
+
+    console.log('Generando nuevo TA para servicio:', opensslTest);
 
     const timestamp = Date.now().toString();
     const traPath = path.join(
@@ -262,7 +264,7 @@ export class ArcaService {
     if (!loginCmsReturn) {
       throw new Error('No se encontró loginCmsReturn en la respuesta de AFIP');
     }
-
+    console.log(response);
     const ta = await parseStringPromise(loginCmsReturn);
 
     const token = ta.loginTicketResponse.credentials[0].token[0];
