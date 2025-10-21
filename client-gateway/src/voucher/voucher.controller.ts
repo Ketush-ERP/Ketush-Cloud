@@ -35,7 +35,7 @@ export class VoucherController {
       const response = await firstValueFrom(
         this.clientProxy.send({ cmd: 'create_voucher' }, createVoucherDto),
       );
-
+      console.log(createVoucherDto);
       return {
         success: true,
         data: response?.data || response,
@@ -159,6 +159,20 @@ export class VoucherController {
     try {
       const response = await firstValueFrom(
         this.clientProxy.send({ cmd: 'delete' }, {}),
+      );
+      return response;
+    } catch (error) {
+      throw new RpcException(
+        `[GATEWAY] Error al eliminar el producto: ${error.message}`,
+      );
+    }
+  }
+
+  @Delete('delete-one/:id')
+  async deleteProductOne(@Param('id') id: string) {
+    try {
+      const response = await firstValueFrom(
+        this.clientProxy.send({ cmd: 'delete_one' }, { id }),
       );
       return response;
     } catch (error) {

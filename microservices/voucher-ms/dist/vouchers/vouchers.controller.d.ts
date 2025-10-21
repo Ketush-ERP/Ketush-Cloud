@@ -170,4 +170,7 @@ export declare class VouchersController {
         status?: undefined;
     }>;
     deleteAll(): Promise<string>;
+    deleteOne(payload: {
+        id: string;
+    }): Promise<string>;
 }

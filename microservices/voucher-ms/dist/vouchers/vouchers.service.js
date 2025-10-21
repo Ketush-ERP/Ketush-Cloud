@@ -137,7 +137,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                         .slice(0, 10)
                         .replace(/-/g, ''),
                     contactCuil: documentNumber,
-                    ivaCondition: contact?.ivaCondition,
+                    ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
                     totalAmount,
                     netAmount,
                     ivaAmount,
@@ -746,14 +746,20 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     }
     async generateVoucherHtml(voucherId) {
         try {
-            const padronData = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'arca_contribuyente_data' }, {}));
+            let contact = null;
+            let padronData = null;
+            try {
+                padronData = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'arca_contribuyente_data' }, {}));
+            }
+            catch (err) {
+                console.warn(`[WARN] No se pudo obtener el padron: ${err.message}`);
+            }
             const voucher = await this.eVoucher.findUnique({
                 where: { id: voucherId },
                 include: { products: true, Payments: true },
             });
             if (!voucher)
                 throw new Error('No se encontró el comprobante');
-            let contact = null;
             if (voucher.contactId) {
                 try {
                     contact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'find_one_contact' }, voucher.contactId));
@@ -765,11 +771,21 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             return await this.buildHtml({ voucher, contact, padronData });
         }
         catch (error) {
-            throw new microservices_1.RpcException('Error al generar el HTML del comprobante');
+            console.log('ERRORRR', error);
+            throw new microservices_1.RpcException({
+                message: `Error al generar el HTML del comprobante: ${error}`,
+                status: common_1.HttpStatus.INTERNAL_SERVER_ERROR,
+            });
         }
     }
     async deleteVoucherAll() {
         const voucher = await this.eVoucher.deleteMany();
+        return 'Succefully';
+    }
+    async deleteVoucherFindOne(id) {
+        const voucher = await this.eVoucher.deleteMany({
+            where: { id },
+        });
         return 'Succefully';
     }
 };

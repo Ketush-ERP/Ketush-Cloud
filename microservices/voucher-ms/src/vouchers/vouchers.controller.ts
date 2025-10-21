@@ -38,4 +38,9 @@ export class VouchersController {
   deleteAll() {
     return this.vouchersService.deleteVoucherAll();
   }
+
+  @MessagePattern({ cmd: 'delete_one' })
+  deleteOne(@Payload() payload: { id: string }) {
+    return this.vouchersService.deleteVoucherFindOne(payload.id);
+  }
 }

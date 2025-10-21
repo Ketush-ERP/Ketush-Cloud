@@ -178,4 +178,5 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
     buildHtml({ voucher, contact, padronData }: any): Promise<string>;
     generateVoucherHtml(voucherId: string): Promise<string>;
     deleteVoucherAll(): Promise<string>;
+    deleteVoucherFindOne(id: string): Promise<string>;
 }

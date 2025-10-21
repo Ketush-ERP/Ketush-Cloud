@@ -168,7 +168,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             .slice(0, 10)
             .replace(/-/g, ''),
           contactCuil: documentNumber,
-          ivaCondition: contact?.ivaCondition,
+          ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
           totalAmount,
           netAmount,
           ivaAmount,
@@ -902,6 +902,13 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
 
   async deleteVoucherAll() {
     const voucher = await this.eVoucher.deleteMany();
+    return 'Succefully';
+  }
+
+  async deleteVoucherFindOne(id: string) {
+    const voucher = await this.eVoucher.deleteMany({
+      where: { id },
+    });
     return 'Succefully';
   }
 }
