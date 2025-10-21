@@ -138,8 +138,6 @@ services:
 
   voucher-ms:
     image: noinblake/voucher-ms-ketush:v1
-    ports:
-      - "5438:5432"
     environment:
       - PORT=3002
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
