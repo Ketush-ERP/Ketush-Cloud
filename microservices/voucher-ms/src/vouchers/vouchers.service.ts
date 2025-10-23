@@ -63,7 +63,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
       importe: Number(voucher.totalAmount ?? 0),
       moneda: 'PES',
       ctz: 1,
-      tipoDocRec: Number(contact?.documentTypeCode ?? 80), // 80 = CUIT
+      tipoDocRec: Number(contact?.documentTypeCode), // 80 = CUIT
       nroDocRec: Number(contact?.documentNumber ?? 0),
       tipoCodAut: 'E',
       codAut: Number(voucher.arcaCae ?? 0), // 👈 asegurate de que sea numérico
