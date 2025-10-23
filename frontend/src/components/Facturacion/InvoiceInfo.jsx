@@ -28,18 +28,6 @@ export default function InvoiceInfo({ invoice }) {
       currency: "ARS",
     }).format(amount);
   };
-
-  // Función para obtener el estado en español
-  const getStatusLabel = (status) => {
-    const statusMap = {
-      PENDING: "Pendiente",
-      SENT: "Pagado",
-      CANCELLED: "Cancelado",
-      EXPIRED: "Expirado",
-    };
-    return statusMap[status] || status || "N/A";
-  };
-
   // Función para obtener la condición de pago en español
   const getPaymentConditionLabel = (condition) => {
     const conditionMap = {
@@ -181,14 +169,14 @@ export default function InvoiceInfo({ invoice }) {
                 </label>
                 <span
                   className={`inline-flex px-3 ml-1 py-1 text-sm font-semibold rounded-full ${
-                    invoice.status === "PENDING"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : invoice.status === "SENT"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                    invoice?.isLoadedToArca === true
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
-                  {getStatusLabel(invoice.status)}
+                  {invoice?.isLoadedToArca === true
+                    ? "CONFIRMADA POR ARCA"
+                    : "NO CONFIRMADA POR ARCA"}
                 </span>
               </div>
             )}

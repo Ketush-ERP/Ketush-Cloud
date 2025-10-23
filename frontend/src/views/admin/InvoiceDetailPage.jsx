@@ -2,13 +2,8 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useVoucherById } from "hooks/useVoucherApi";
 import { useVoucherPayments } from "hooks/usePaymentsApi";
-import { useBanks } from "hooks/useBanksApi";
-import { useCards } from "hooks/useCardsApi";
-import { useContactsApi } from "hooks/useContactsApi";
-import { useInvoiceUtils } from "hooks/useInvoiceUtils";
 import PaymentForm from "components/Facturacion/PaymentForm";
 import CreateNotaModal from "components/Facturacion/CreateNotaModal";
-import LoadingScreen from "components/LoadingScreen";
 import toast from "react-hot-toast";
 
 // Componentes de la factura
@@ -50,12 +45,6 @@ export default function InvoiceDetailPage() {
     (voucherData?.totalAmount || 0) - totalPaid
   );
   const isFullyPaid = totalPaid >= (voucherData?.totalAmount || 0);
-
-  // Debug: mostrar los datos de pagos
-  console.log("Pagos cargados:", paymentsData);
-  console.log("Total pagado:", totalPaid);
-  console.log("Monto restante:", remainingAmount);
-  console.log("¿Está completamente pagado?:", isFullyPaid);
 
   // Función para manejar el registro de pago exitoso
   const handlePaymentSuccess = async () => {
@@ -107,6 +96,7 @@ export default function InvoiceDetailPage() {
     productos: voucherData.products || [],
     pagos: paymentsData || [],
     // Datos del voucher para InvoiceInfo
+    isLoadedToArca: voucherData.isLoadedToArca,
     voucherNumber: voucherData.voucherNumber,
     pointOfSale: voucherData.pointOfSale,
     type: voucherData.type,

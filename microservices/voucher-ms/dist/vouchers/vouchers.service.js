@@ -124,6 +124,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             const isCredit = paidAmount >= totalAmount ? 'CASH' : 'CREDIT';
             let arcaCae;
             let arcaDueDate;
+            let isLoadedToArca;
             if (loadToArca) {
                 const arcaDto = {
                     cuil,
@@ -137,7 +138,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                         .slice(0, 10)
                         .replace(/-/g, ''),
                     contactCuil: documentNumber,
-                    ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
+                    ivaCondition: contact?.ivaCondition,
                     totalAmount,
                     netAmount,
                     ivaAmount,
@@ -146,6 +147,8 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 const response = await this._loadToArca(arcaDto);
                 arcaCae = response?.cae;
                 arcaDueDate = response?.caeFchVto;
+                isLoadedToArca =
+                    response?.isLoadedToArca === 'A' ? true : false || false;
                 if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
                     const obsMessages = response.errors?.map((o) => `[${o.Code}] ${o.Msg}`).join('; ') ??
                         '';
@@ -171,7 +174,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                         associatedVoucherType,
                         paidAmount,
                         available,
-                        ...(loadToArca ? { arcaCae, arcaDueDate } : {}),
+                        ...(loadToArca ? { arcaCae, arcaDueDate, isLoadedToArca } : {}),
                     },
                 });
                 await tx.eVoucherProduct.createMany({
@@ -277,6 +280,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                     message: `[FIND_ONE_VOUCHER] El comprobante ${id} no existe.`,
                 };
             }
+            console.log(voucher);
             return voucher;
         }
         catch (error) {

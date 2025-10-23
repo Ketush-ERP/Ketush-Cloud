@@ -29,6 +29,7 @@ export declare class VouchersController {
         associatedVoucherType: import(".prisma/client").$Enums.VoucherType | null;
         createdAt: Date;
         updatedAt: Date;
+        isLoadedToArca: boolean | null;
     } | {
         status: import("@nestjs/common").HttpStatus;
         message: string;
@@ -80,6 +81,7 @@ export declare class VouchersController {
             associatedVoucherType: import(".prisma/client").$Enums.VoucherType | null;
             createdAt: Date;
             updatedAt: Date;
+            isLoadedToArca: boolean | null;
         })[];
         meta: {
             total: number;
@@ -142,6 +144,7 @@ export declare class VouchersController {
         associatedVoucherType: import(".prisma/client").$Enums.VoucherType | null;
         createdAt: Date;
         updatedAt: Date;
+        isLoadedToArca: boolean | null;
     }) | {
         status: import("@nestjs/common").HttpStatus;
         message: string;

@@ -1,12 +1,5 @@
 import React, { memo, useState, useEffect } from "react";
-import {
-  FaFileInvoice,
-  FaCheckCircle,
-  FaClock,
-  FaTimesCircle,
-  FaExclamationTriangle,
-  FaUser,
-} from "react-icons/fa";
+import { FaFileInvoice, FaCheckCircle, FaClock, FaUser } from "react-icons/fa";
 import { useContactById } from "hooks/useContactsApi";
 
 /**
@@ -191,42 +184,6 @@ const FacturaItem = memo(({ factura, onClick }) => {
     }
   };
 
-  // Obtener etiqueta del estado
-  const getStatusLabel = (status) => {
-    const statusMap = {
-      PENDING: "Pendiente",
-      PAID: "Pagada",
-      CANCELLED: "Cancelada",
-      EXPIRED: "Vencida",
-      SENT: "Completamente pagada",
-    };
-    return statusMap[status] || status || "N/A";
-  };
-
-  // Obtener color del estado
-  const getStatusColor = (status) => {
-    const colorMap = {
-      PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      PAID: "bg-green-100 text-green-800 border-green-200",
-      CANCELLED: "bg-red-100 text-red-800 border-red-200",
-      EXPIRED: "bg-orange-100 text-orange-800 border-orange-200",
-      SENT: "bg-emerald-100 text-emerald-800 border-emerald-200",
-    };
-    return colorMap[status] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
-
-  // Obtener icono del estado
-  const getStatusIcon = (status) => {
-    const iconMap = {
-      PENDING: <FaClock className="w-3 h-3" />,
-      PAID: <FaCheckCircle className="w-3 h-3" />,
-      CANCELLED: <FaTimesCircle className="w-3 h-3" />,
-      EXPIRED: <FaExclamationTriangle className="w-3 h-3" />,
-      SENT: <FaCheckCircle className="w-3 h-3" />,
-    };
-    return iconMap[status] || null;
-  };
-
   // Obtener etiqueta de condición de pago
   const getPaymentConditionLabel = (condition) => {
     const conditionMap = {
@@ -237,10 +194,11 @@ const FacturaItem = memo(({ factura, onClick }) => {
     return conditionMap[condition] || condition || "N/A";
   };
 
-  // Calcular si la factura está completamente pagada
-  const isFullyPaid = factura.status === "SENT" || factura.status === "PAID";
+  const isFullyPaid = factura.conditionPayment === "CASH" ? true : false;
   const hasRemainingAmount =
     factura.totalAmount && factura.totalAmount - factura.paidAmount > 0;
+
+  console.log(factura);
 
   return (
     <div
@@ -498,11 +456,17 @@ const FacturaItem = memo(({ factura, onClick }) => {
           {!factura.type?.includes("NOTA_") &&
             factura.type !== "PRESUPUESTO" && (
               <div className="flex items-center gap-2">
-                {getStatusIcon(factura.status)}
+                {factura?.isLoadedToArca === true ? (
+                  <FaCheckCircle className="w-3 h-3" />
+                ) : (
+                  <FaClock className="w-3 h-3" />
+                )}
                 <span
-                  className={`inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border ${getStatusColor(factura.status)}`}
+                  className={`inline-flex px-3 py-1.5 text-xs font-semibold rounded-full border ${factura?.isLoadedToArca === true ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}`}
                 >
-                  {getStatusLabel(factura.status)}
+                  {factura?.isLoadedToArca === true
+                    ? "CONFIRMADA POR ARCA"
+                    : "NO SE CONFIRMO EN ARCA"}
                 </span>
               </div>
             )}

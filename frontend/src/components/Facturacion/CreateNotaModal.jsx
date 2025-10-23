@@ -207,10 +207,6 @@ export default function CreateNotaModal({ invoice, onClose, onSuccess }) {
   // Actualizar el tipo de nota cuando cambie el tipo de factura
   useEffect(() => {
     const facturaType = formData.associatedVoucherType;
-    console.log("Actualizando tipo de nota:", {
-      facturaType,
-      currentType: formData.type,
-    });
 
     if (facturaType === "FACTURA_A" && formData.type.includes("B")) {
       setFormData((prev) => ({

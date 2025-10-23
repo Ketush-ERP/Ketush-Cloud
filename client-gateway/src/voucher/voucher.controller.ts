@@ -35,7 +35,6 @@ export class VoucherController {
       const response = await firstValueFrom(
         this.clientProxy.send({ cmd: 'create_voucher' }, createVoucherDto),
       );
-      console.log(createVoucherDto);
       return {
         success: true,
         data: response?.data || response,

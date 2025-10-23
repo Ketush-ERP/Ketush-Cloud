@@ -75,7 +75,6 @@ export default function InvoiceDetail({ invoice, onRefresh }) {
         onRefresh();
       }
     } catch (error) {
-      console.error("Error al registrar pago:", error);
       toast.error("Error al registrar el pago");
     }
   };

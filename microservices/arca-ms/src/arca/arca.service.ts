@@ -172,8 +172,6 @@ export class ArcaService {
       throw new Error(`OpenSSL no está disponible: ${errMsg}`);
     }
 
-    console.log('Generando nuevo TA para servicio:', opensslTest);
-
     const timestamp = Date.now().toString();
     const traPath = path.join(
       taFilesPath,
@@ -264,7 +262,6 @@ export class ArcaService {
     if (!loginCmsReturn) {
       throw new Error('No se encontró loginCmsReturn en la respuesta de AFIP');
     }
-    console.log(response);
     const ta = await parseStringPromise(loginCmsReturn);
 
     const token = ta.loginTicketResponse.credentials[0].token[0];
@@ -489,6 +486,7 @@ export class ArcaService {
 
       const result =
         parsed.Envelope?.Body?.FECAESolicitarResponse?.FECAESolicitarResult;
+
       const detResp = result?.FeDetResp?.FECAEDetResponse;
       const err = result?.Errors?.Err;
       let observations: Array<{ Code: string; Msg: string }> = [];
@@ -521,6 +519,7 @@ export class ArcaService {
         caeFchVto: detResp?.CAEFchVto,
         voucherNumber: dto.voucherNumber,
         pointOfSale: dto.pointOfSale,
+        isLoadedToArca: detResp?.resultado,
       };
     } catch (error) {
       return {

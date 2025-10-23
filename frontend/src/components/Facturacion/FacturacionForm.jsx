@@ -130,9 +130,6 @@ function validarYRedondearPrecio(precio, nombreProducto = "") {
   if (precioNum % 1 !== 0 && precioNum.toString().split(".")[1]?.length > 2) {
     // Usar toast directamente ya que está importado en el componente
     // Nota: toast se mostrará desde el componente que llama a esta función
-    console.log(
-      `Precio del producto "${nombreProducto}" redondeado automáticamente de ${precioNum} a ${precioRedondeado}`
-    );
   }
 
   return precioRedondeado;

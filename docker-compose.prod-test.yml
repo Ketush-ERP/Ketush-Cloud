@@ -137,20 +137,20 @@ services:
     restart: unless-stopped
     networks:
       - ketshup-app
-  voucher-ms-ketush:
-    image: voucher-ms-ketush
-    build:
-      context: ./microservices/voucher-ms
-      dockerfile: dockerfile.prod
-    environment:
-      - NATS_SERVERS=nats://nats-servers:4222
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
-      - PORT=3006
-    depends_on:
-      - voucher-db
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  # voucher-ms-ketush:
+  #   image: voucher-ms-ketush
+  #   build:
+  #     context: ./microservices/voucher-ms
+  #     dockerfile: dockerfile.prod
+  #   environment:
+  #     - NATS_SERVERS=nats://nats-servers:4222
+  #     - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
+  #     - PORT=3006
+  #   depends_on:
+  #     - voucher-db
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
   voucher-db:
     image: postgres:15-alpine

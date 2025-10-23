@@ -155,6 +155,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
       // Inicializar datos ARCA solo si es necesario
       let arcaCae: string | undefined;
       let arcaDueDate: string | undefined;
+      let isLoadedToArca: boolean;
       if (loadToArca) {
         const arcaDto = {
           cuil,
@@ -168,16 +169,18 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             .slice(0, 10)
             .replace(/-/g, ''),
           contactCuil: documentNumber,
-          ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
+          ivaCondition: contact?.ivaCondition,
           totalAmount,
           netAmount,
           ivaAmount,
           currency: 'PES',
         };
 
-        const response = await this._loadToArca(arcaDto);
+        const response = await this._loadToArca(arcaDto); // ACA SE CARGA EN ARCAAAA, SI NO SE CARGA
         arcaCae = response?.cae;
         arcaDueDate = response?.caeFchVto;
+        isLoadedToArca =
+          response?.isLoadedToArca === 'A' ? true : false || false;
 
         if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
           // Convertir la lista de observaciones en un string legible
@@ -208,7 +211,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             associatedVoucherType,
             paidAmount,
             available,
-            ...(loadToArca ? { arcaCae, arcaDueDate } : {}),
+            ...(loadToArca ? { arcaCae, arcaDueDate, isLoadedToArca } : {}),
           },
         });
 
@@ -336,7 +339,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
           message: `[FIND_ONE_VOUCHER] El comprobante ${id} no existe.`,
         };
       }
-
+      console.log(voucher);
       return voucher;
     } catch (error) {
       return {
