@@ -65,7 +65,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             importe: Number(voucher.totalAmount ?? 0),
             moneda: 'PES',
             ctz: 1,
-            tipoDocRec: Number(contact?.documentTypeCode ?? 80),
+            tipoDocRec: Number(contact?.documentTypeCode),
             nroDocRec: Number(contact?.documentNumber ?? 0),
             tipoCodAut: 'E',
             codAut: Number(voucher.arcaCae ?? 0),
@@ -138,7 +138,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                         .slice(0, 10)
                         .replace(/-/g, ''),
                     contactCuil: documentNumber,
-                    ivaCondition: contact?.ivaCondition,
+                    ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
                     totalAmount,
                     netAmount,
                     ivaAmount,
@@ -149,6 +149,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 arcaDueDate = response?.caeFchVto;
                 isLoadedToArca =
                     response?.isLoadedToArca === 'A' ? true : false || false;
+                console.log(response);
                 if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
                     const obsMessages = response.errors?.map((o) => `[${o.Code}] ${o.Msg}`).join('; ') ??
                         '';

@@ -387,7 +387,9 @@ export class ArcaService {
 
   async emitVoucher(dto: CreateVocuherDto): Promise<any> {
     try {
+      console.log(dto);
       const { token, sign } = this._getCredentials();
+
       const cbteTipo = this._getVoucherCode(dto.voucherType);
       const cuil = envs.cuit;
       const isTypeC = [11, 12, 13].includes(cbteTipo); // Facturas y notas C
@@ -479,6 +481,8 @@ export class ArcaService {
         timeout: 10000,
       });
 
+      console.log(response, 'RESPONSEEE');
+
       const parsed = await parseStringPromise(response.data, {
         tagNameProcessors: [processors.stripPrefix],
         explicitArray: false,
@@ -486,6 +490,7 @@ export class ArcaService {
 
       const result =
         parsed.Envelope?.Body?.FECAESolicitarResponse?.FECAESolicitarResult;
+      console.log(result, 'RESULTADOO');
 
       const detResp = result?.FeDetResp?.FECAEDetResponse;
       const err = result?.Errors?.Err;
@@ -519,7 +524,7 @@ export class ArcaService {
         caeFchVto: detResp?.CAEFchVto,
         voucherNumber: dto.voucherNumber,
         pointOfSale: dto.pointOfSale,
-        isLoadedToArca: detResp?.resultado,
+        isLoadedToArca: detResp?.Resultado,
       };
     } catch (error) {
       return {

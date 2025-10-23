@@ -83,6 +83,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
           .send({ cmd: 'arca_emit_invoice' }, arcaDto)
           .pipe(timeout(5000)),
       );
+
       return arca;
     } catch (error) {
       return {
@@ -169,7 +170,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             .slice(0, 10)
             .replace(/-/g, ''),
           contactCuil: documentNumber,
-          ivaCondition: contact?.ivaCondition,
+          ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
           totalAmount,
           netAmount,
           ivaAmount,
@@ -181,7 +182,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
         arcaDueDate = response?.caeFchVto;
         isLoadedToArca =
           response?.isLoadedToArca === 'A' ? true : false || false;
-
+        console.log(response);
         if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
           // Convertir la lista de observaciones en un string legible
           const obsMessages =

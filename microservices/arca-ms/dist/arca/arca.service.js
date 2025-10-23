@@ -307,6 +307,7 @@ let ArcaService = class ArcaService {
     }
     async emitVoucher(dto) {
         try {
+            console.log(dto);
             const { token, sign } = this._getCredentials();
             const cbteTipo = this._getVoucherCode(dto.voucherType);
             const cuil = config_1.envs.cuit;
@@ -390,11 +391,13 @@ let ArcaService = class ArcaService {
                 },
                 timeout: 10000,
             });
+            console.log(response, 'RESPONSEEE');
             const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
                 tagNameProcessors: [xml2js_1.processors.stripPrefix],
                 explicitArray: false,
             });
             const result = parsed.Envelope?.Body?.FECAESolicitarResponse?.FECAESolicitarResult;
+            console.log(result, 'RESULTADOO');
             const detResp = result?.FeDetResp?.FECAEDetResponse;
             const err = result?.Errors?.Err;
             let observations = [];
@@ -426,7 +429,7 @@ let ArcaService = class ArcaService {
                 caeFchVto: detResp?.CAEFchVto,
                 voucherNumber: dto.voucherNumber,
                 pointOfSale: dto.pointOfSale,
-                isLoadedToArca: detResp?.resultado,
+                isLoadedToArca: detResp?.Resultado,
             };
         }
         catch (error) {
