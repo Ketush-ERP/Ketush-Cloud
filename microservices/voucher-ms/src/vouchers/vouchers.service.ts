@@ -767,7 +767,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
           <div><b>Cliente:</b> ${contact?.name || '-'}</div>
         </div>
         <div class="client-row">
-          <div><b>IVA:</b> ${contact?.ivaCondition || '-'}</div>
+          <div><b>IVA:</b> ${contact?.ivaCondition || 'Consumidor Final'}</div>
           <div><b>Domicilio:</b> ${contact?.address || '-'}</div>
         </div>
         ${
@@ -837,7 +837,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
       <!-- Footer -->
       <section class="foot">
         <div>
-          ${letra === 'P' ? '<div class="bold">Comprobante Autorizado</div>' : '<div class="bold">Comprobante No Autorizado</div>'}
+          ${letra === 'P' ? '<div class="bold">Comprobante No Autorizado</div>' : '<div class="bold">Comprobante Autorizado</div>'}
           <p class="foot-note">
             Esta Administración Federal no se responsabiliza por los datos
             ingresados en el detalle de la operación
@@ -852,7 +852,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             </tr>
             <tr>
               <td><b>Vto. CAE</b></td>
-              <td class="t-right">${voucher?.arcaDueDate || '-'}</td>
+              <td class="t-right">${formatDate(voucher?.arcaDueDate) || '-'}</td>
             </tr>
           </table>
           <div class="t-center mt-6">Pág 1/1</div>
