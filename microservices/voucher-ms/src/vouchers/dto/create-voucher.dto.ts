@@ -43,7 +43,7 @@ export class CreateVoucherDto {
 
   @IsString()
   @IsOptional()
-  contactId: string;
+  contactCuil: string;
 
   @IsEnum(Currency)
   currency: Currency;

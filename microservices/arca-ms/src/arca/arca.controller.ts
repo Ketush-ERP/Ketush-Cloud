@@ -13,6 +13,11 @@ export class ArcaController {
     return this.arcaService.getContribuyenteData();
   }
 
+  @MessagePattern({ cmd: 'get_padron_the_client' })
+  async getPadronTheClient(@Payload() dni: string) {
+    return this.arcaService.getCuitByDni(dni);
+  }
+
   @MessagePattern({ cmd: 'arca_authorize' })
   async login() {
     return await this.arcaService.loginWithCuit('wsfe');

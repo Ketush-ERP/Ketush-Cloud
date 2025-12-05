@@ -23,7 +23,7 @@ class CreateVoucherDto {
     type;
     emissionDate;
     dueDate;
-    contactId;
+    contactCuil;
     currency;
     products;
     totalAmount;
@@ -70,7 +70,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], CreateVoucherDto.prototype, "contactId", void 0);
+], CreateVoucherDto.prototype, "contactCuil", void 0);
 __decorate([
     (0, class_validator_1.IsEnum)(client_1.Currency),
     __metadata("design:type", String)

@@ -1,0 +1,8 @@
+<loginTicketRequest>
+        <header>
+          <uniqueId>1764891019</uniqueId>
+          <generationTime>2025-12-04T23:20:19.726Z</generationTime>
+          <expirationTime>2025-12-05T11:30:19.726Z</expirationTime>
+        </header>
+        <service>ws_sr_padron_a13</service>
+      </loginTicketRequest>

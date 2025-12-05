@@ -5,6 +5,11 @@ export declare class ArcaController {
     private readonly arcaService;
     constructor(arcaService: ArcaService);
     getContribuyenteData(): Promise<any>;
+    getPadronTheClient(dni: string): Promise<{
+        dni: string;
+        cuit: string;
+        persona: any;
+    }>;
     login(): Promise<{
         token: string;
         sign: string;

@@ -5,6 +5,7 @@ export declare class ArcaService {
     private sign;
     private expirationTime;
     private pointOfSale;
+    private _dniToPossibleCuits;
     private _voucherTypeMap;
     private _ivaConditionMap;
     private _getVoucherCode;
@@ -20,4 +21,9 @@ export declare class ArcaService {
         number: number;
     }>;
     emitVoucher(dto: CreateVocuherDto): Promise<any>;
+    getCuitByDni(dni: string): Promise<{
+        dni: string;
+        cuit: string;
+        persona: any;
+    }>;
 }

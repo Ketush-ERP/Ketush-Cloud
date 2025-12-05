@@ -47,6 +47,50 @@ export function useContacts({
   });
 }
 
+export function useContactsByArca({
+  offset = 1,
+  pageSize = 100,
+  search = "",
+  type = "",
+}) {
+  return useQuery({
+    queryKey: ["contacts", offset, pageSize, search, type],
+    queryFn: async () => {
+      let url;
+      if (search) {
+        url = `/contacts/search_arca?query=${encodeURIComponent(search)}&type=CLIENT&offset=${offset}&limit=${pageSize}`;
+      } else {
+        url = `/contacts/search_arca?type=${type}&offset=${offset}&limit=${pageSize}`;
+
+        // if (type) {
+        //   url += `&type=${type}`;
+        // }
+      }
+
+      try {
+        const { data } = await axiosInstance.get(url);
+        return data;
+      } catch (error) {
+        if (error.response?.status === 404 && search) {
+          return {
+            data: [],
+            meta: {
+              total: 0,
+              offset: offset,
+              limit: pageSize,
+            },
+          };
+        }
+        throw error;
+      }
+    },
+    keepPreviousData: true,
+    staleTime: 30000,
+    cacheTime: 300000,
+    enabled: !!offset && !!pageSize,
+  });
+}
+
 // Hook para obtener un contacto específico por ID
 export function useContactById(contactId, options = {}) {
   return useQuery({

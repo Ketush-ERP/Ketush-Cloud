@@ -12,6 +12,7 @@ import { PaginationDto } from './dto/pagination.dto';
 import { ClientProxy } from '@nestjs/microservices';
 import { ChangeProfitMarginDto } from './dto/update-contact.dto';
 import { NATS_SERVICE } from 'src/config';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ContactsService extends PrismaClient implements OnModuleInit {
@@ -32,11 +33,7 @@ export class ContactsService extends PrismaClient implements OnModuleInit {
     });
 
     if (existingContact) {
-      return {
-        message:
-          '[CONTACT_CREATE] Contact with this CUIT/CUIL/DNI already exists',
-        status: HttpStatus.METHOD_NOT_ALLOWED,
-      };
+      return existingContact;
     }
 
     const newContact = await this.eContact.create({
@@ -88,6 +85,18 @@ export class ContactsService extends PrismaClient implements OnModuleInit {
       where,
       pagination: paginationDto,
     });
+  }
+
+  async searchContactByArca(paginationDto: PaginationDto) {
+    const { query } = paginationDto;
+
+    const arcaProfile = await firstValueFrom(
+      this.client.send({ cmd: 'get_padron_the_client' }, query),
+    );
+
+    return {
+      afipPerson: arcaProfile || [], // Si existe, se incluye info de AFIP
+    };
   }
 
   async changePercentageGain(changeProfitMarginDto: ChangeProfitMarginDto) {

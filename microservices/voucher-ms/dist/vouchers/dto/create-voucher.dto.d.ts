@@ -9,7 +9,7 @@ export declare class CreateVoucherDto {
     type: VoucherType;
     emissionDate: Date;
     dueDate: Date;
-    contactId: string;
+    contactCuil: string;
     currency: Currency;
     products: VoucherProductItemDto[];
     totalAmount: number;

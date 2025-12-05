@@ -15,7 +15,6 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
     private _generateAfipQr;
     private _loadToArca;
     create(createVoucherDto: CreateVoucherDto): Promise<{
-        contactId: string | null;
         id: string;
         arcaCae: string | null;
         arcaDueDate: string | null;
@@ -25,6 +24,7 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
         emissionDate: Date;
         dueDate: Date | null;
         status: import(".prisma/client").$Enums.VoucherStatus;
+        contactId: string | null;
         conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
         totalAmount: number | null;
         ivaAmount: number | null;
@@ -67,7 +67,6 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
                 cardId: string | null;
             }[];
         } & {
-            contactId: string | null;
             id: string;
             arcaCae: string | null;
             arcaDueDate: string | null;
@@ -77,6 +76,7 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
             emissionDate: Date;
             dueDate: Date | null;
             status: import(".prisma/client").$Enums.VoucherStatus;
+            contactId: string | null;
             conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
             totalAmount: number | null;
             ivaAmount: number | null;
@@ -128,7 +128,6 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
             cardId: string | null;
         }[];
     } & {
-        contactId: string | null;
         id: string;
         arcaCae: string | null;
         arcaDueDate: string | null;
@@ -138,6 +137,7 @@ export declare class VouchersService extends PrismaClient implements OnModuleIni
         emissionDate: Date;
         dueDate: Date | null;
         status: import(".prisma/client").$Enums.VoucherStatus;
+        contactId: string | null;
         conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
         totalAmount: number | null;
         ivaAmount: number | null;

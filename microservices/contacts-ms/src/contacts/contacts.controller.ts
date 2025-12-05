@@ -27,6 +27,11 @@ export class ContactsController {
     return this.contactsService.findOneById(id);
   }
 
+  @MessagePattern({ cmd: 'search_contacts_arca' })
+  searchContactByArca(@Payload() paginationDto: PaginationDto) {
+    return this.contactsService.searchContactByArca(paginationDto);
+  }
+
   @MessagePattern({ cmd: 'search_contacts' })
   searchContact(@Payload() paginationDto: PaginationDto) {
     return this.contactsService.searchContact(paginationDto);

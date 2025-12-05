@@ -7,7 +7,6 @@ export declare class VouchersController {
     constructor(vouchersService: VouchersService);
     generateVoucherPdf(voucherId: string): Promise<string>;
     create(createVoucherDto: CreateVoucherDto): Promise<{
-        contactId: string | null;
         id: string;
         arcaCae: string | null;
         arcaDueDate: string | null;
@@ -17,6 +16,7 @@ export declare class VouchersController {
         emissionDate: Date;
         dueDate: Date | null;
         status: import(".prisma/client").$Enums.VoucherStatus;
+        contactId: string | null;
         conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
         totalAmount: number | null;
         ivaAmount: number | null;
@@ -59,7 +59,6 @@ export declare class VouchersController {
                 cardId: string | null;
             }[];
         } & {
-            contactId: string | null;
             id: string;
             arcaCae: string | null;
             arcaDueDate: string | null;
@@ -69,6 +68,7 @@ export declare class VouchersController {
             emissionDate: Date;
             dueDate: Date | null;
             status: import(".prisma/client").$Enums.VoucherStatus;
+            contactId: string | null;
             conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
             totalAmount: number | null;
             ivaAmount: number | null;
@@ -122,7 +122,6 @@ export declare class VouchersController {
             cardId: string | null;
         }[];
     } & {
-        contactId: string | null;
         id: string;
         arcaCae: string | null;
         arcaDueDate: string | null;
@@ -132,6 +131,7 @@ export declare class VouchersController {
         emissionDate: Date;
         dueDate: Date | null;
         status: import(".prisma/client").$Enums.VoucherStatus;
+        contactId: string | null;
         conditionPayment: import(".prisma/client").$Enums.ConditionPayment | null;
         totalAmount: number | null;
         ivaAmount: number | null;

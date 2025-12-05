@@ -75,6 +75,18 @@ export class ContactsController {
     }
   }
 
+  @Get('search_arca')
+  async searchByArca(@Query() paginationDto: PaginationDto) {
+    try {
+      const contacts = await firstValueFrom(
+        this.client.send({ cmd: 'search_contacts_arca' }, paginationDto),
+      );
+      return contacts;
+    } catch (error) {
+      throw new RpcException(`Failed to search contacts: ${error.message}`);
+    }
+  }
+
   @UseGuards(AuthGuard, RolesGuard)
   @Roles(RoleAuthEnum.ADMIN)
   @Patch('update/percentage-gain/:id')

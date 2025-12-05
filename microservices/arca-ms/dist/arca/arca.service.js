@@ -22,6 +22,28 @@ let ArcaService = class ArcaService {
     sign = null;
     expirationTime = null;
     pointOfSale = 3;
+    _dniToPossibleCuits(dni) {
+        const prefixes = ['20', '23', '27', '30'];
+        const calcDv = (num) => {
+            const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+            let sum = 0;
+            for (let i = 0; i < weights.length; i++) {
+                sum += parseInt(num[i], 10) * weights[i];
+            }
+            const mod = sum % 11;
+            const dv = 11 - mod;
+            if (dv === 11)
+                return 0;
+            if (dv === 10)
+                return 9;
+            return dv;
+        };
+        return prefixes.map((prefix) => {
+            const base = prefix + dni;
+            const dv = calcDv(base);
+            return `${base}${dv}`;
+        });
+    }
     _voucherTypeMap = {
         [voucher_type_enum_1.VoucherType.FACTURA_A]: 1,
         [voucher_type_enum_1.VoucherType.FACTURA_B]: 6,
@@ -72,19 +94,19 @@ let ArcaService = class ArcaService {
             const { token, sign } = await this.loginWithCuit('ws_sr_padron_a13');
             const wsPadronUrl = config_1.envs.wsPadronA13UrlProd.replace('?WSDL', '');
             const requestXml = `
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                  xmlns:a13="http://a13.soap.ws.server.puc.sr/">
-  <soapenv:Header/>
-  <soapenv:Body>
-    <a13:getPersona>
-      <token>${token}</token>
-      <sign>${sign}</sign>
-      <cuitRepresentada>${config_1.envs.cuit}</cuitRepresentada>
-      <idPersona>${config_1.envs.cuit}</idPersona>
-    </a13:getPersona>
-  </soapenv:Body>
-</soapenv:Envelope>
-`.trim();
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                          xmlns:a13="http://a13.soap.ws.server.puc.sr/">
+          <soapenv:Header/>
+          <soapenv:Body>
+            <a13:getPersona>
+              <token>${token}</token>
+              <sign>${sign}</sign>
+              <cuitRepresentada>${config_1.envs.cuit}</cuitRepresentada>
+              <idPersona>${config_1.envs.cuit}</idPersona>
+            </a13:getPersona>
+          </soapenv:Body>
+        </soapenv:Envelope>
+        `.trim();
             const response = await axios_1.default.post(wsPadronUrl, requestXml, {
                 headers: {
                     'Content-Type': 'text/xml; charset=utf-8',
@@ -307,7 +329,6 @@ let ArcaService = class ArcaService {
     }
     async emitVoucher(dto) {
         try {
-            console.log(dto);
             const { token, sign } = this._getCredentials();
             const cbteTipo = this._getVoucherCode(dto.voucherType);
             const cuil = config_1.envs.cuit;
@@ -391,13 +412,11 @@ let ArcaService = class ArcaService {
                 },
                 timeout: 10000,
             });
-            console.log(response, 'RESPONSEEE');
             const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
                 tagNameProcessors: [xml2js_1.processors.stripPrefix],
                 explicitArray: false,
             });
             const result = parsed.Envelope?.Body?.FECAESolicitarResponse?.FECAESolicitarResult;
-            console.log(result, 'RESULTADOO');
             const detResp = result?.FeDetResp?.FECAEDetResponse;
             const err = result?.Errors?.Err;
             let observations = [];
@@ -437,6 +456,58 @@ let ArcaService = class ArcaService {
                 status: `[ARCA_EMIT] Problema con cargar el comprobante en ARCA: ${error}`,
                 message: error.message || 'Error al emitir comprobante',
             };
+        }
+    }
+    async getCuitByDni(dni) {
+        try {
+            const possibleCuits = this._dniToPossibleCuits(dni);
+            const { token, sign } = await this.loginWithCuit('ws_sr_padron_a13');
+            const url = config_1.envs.wsPadronA13UrlProd.replace('?WSDL', '');
+            for (const cuit of possibleCuits) {
+                const requestXml = `
+          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                            xmlns:a13="http://a13.soap.ws.server.puc.sr/">
+            <soapenv:Header/>
+            <soapenv:Body>
+              <a13:getPersona>
+                <token>${token}</token>
+                <sign>${sign}</sign>
+                <cuitRepresentada>${config_1.envs.cuit}</cuitRepresentada>
+                <idPersona>${cuit}</idPersona>
+              </a13:getPersona>
+            </soapenv:Body>
+          </soapenv:Envelope>
+        `.trim();
+                try {
+                    const response = await axios_1.default.post(url, requestXml, {
+                        headers: { 'Content-Type': 'text/xml' },
+                        timeout: 15000,
+                    });
+                    const parsed = await (0, xml2js_1.parseStringPromise)(response.data, {
+                        tagNameProcessors: [xml2js_1.processors.stripPrefix],
+                        explicitArray: false,
+                    });
+                    const persona = parsed.Envelope?.Body?.getPersonaResponse?.personaReturn?.persona;
+                    if (persona) {
+                        return {
+                            dni,
+                            cuit,
+                            persona,
+                        };
+                    }
+                }
+                catch (error) {
+                    console.log('Error fetching AFIP data for CUIT', cuit, ':', error);
+                    continue;
+                }
+            }
+            throw new Error(`No se encontró ningún CUIT válido para el DNI ${dni}`);
+        }
+        catch (err) {
+            throw new microservices_1.RpcException({
+                status: common_1.HttpStatus.BAD_REQUEST,
+                message: err.message || 'Error buscando CUIT por DNI con A13',
+            });
         }
     }
 };

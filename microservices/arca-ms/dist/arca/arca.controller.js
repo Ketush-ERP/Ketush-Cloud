@@ -25,6 +25,9 @@ let ArcaController = class ArcaController {
     async getContribuyenteData() {
         return this.arcaService.getContribuyenteData();
     }
+    async getPadronTheClient(dni) {
+        return this.arcaService.getCuitByDni(dni);
+    }
     async login() {
         return await this.arcaService.loginWithCuit('wsfe');
     }
@@ -42,6 +45,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ArcaController.prototype, "getContribuyenteData", null);
+__decorate([
+    (0, microservices_1.MessagePattern)({ cmd: 'get_padron_the_client' }),
+    __param(0, (0, microservices_1.Payload)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ArcaController.prototype, "getPadronTheClient", null);
 __decorate([
     (0, microservices_1.MessagePattern)({ cmd: 'arca_authorize' }),
     __metadata("design:type", Function),

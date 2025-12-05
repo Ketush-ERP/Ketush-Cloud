@@ -101,7 +101,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
         paidAmount = 0,
         available = true,
         initialPayment,
-        contactId,
+        contactCuil,
         currency,
         loadToArca,
         associatedVoucherNumber,
@@ -109,21 +109,46 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
         ...voucherData
       } = createVoucherDto;
 
-      let contact: any;
+      let newContact: any;
       let documentNumber: number | undefined;
       const isPresupuesto =
         (createVoucherDto.type as VoucherType) === VoucherType.PRESUPUESTO;
-      if (contactId) {
-        contact = await firstValueFrom(
-          this.client.send({ cmd: 'find_one_contact' }, contactId),
+
+      if (contactCuil) {
+        const contact = await firstValueFrom(
+          this.client.send(
+            { cmd: 'search_contacts_arca' },
+            { query: contactCuil },
+          ),
         );
-        if (!contact) {
-          return {
-            status: HttpStatus.BAD_REQUEST,
-            message: `[CREATE_VOUCHER] No se encontró el contacto con ID ${contactId}`,
+
+        if (contact) {
+          const contactData = {
+            name: `${contact?.afipPerson?.persona?.nombre} ${contact?.afipPerson?.persona?.apellido}`,
+            ivaCondition:
+              createVoucherDto.type === 'FACTURA_B'
+                ? 'CONSUMIDOR_FINAL'
+                : 'RESPONSABLE_INSCRIPTO',
+            documentType: 'DNI',
+            documentNumber: contact?.afipPerson?.persona?.numeroDocumento,
+            address: `${contact?.afipPerson?.persona?.domicilio?.calle} ${contact?.afipPerson?.persona?.domicilio?.numero}`,
+            type: 'CLIENT',
           };
+
+          console.log(contactData);
+
+          newContact = await firstValueFrom(
+            this.client.send({ cmd: 'create_contact' }, contactData),
+          );
+
+          if (!newContact) {
+            return {
+              status: HttpStatus.BAD_REQUEST,
+              message: `[CREATE_VOUCHER] No se pudo guardar el contacto ${contact?.afipPerson?.persona?.nombre}`,
+            };
+          }
+          documentNumber = parseInt(newContact?.documentNumber);
         }
-        documentNumber = parseInt(contact?.documentNumber);
       }
 
       // Validar productos
@@ -170,7 +195,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             .slice(0, 10)
             .replace(/-/g, ''),
           contactCuil: documentNumber,
-          ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
+          ivaCondition: newContact?.ivaCondition || 'CONSUMIDOR_FINAL',
           totalAmount,
           netAmount,
           ivaAmount,
@@ -182,7 +207,6 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
         arcaDueDate = response?.caeFchVto;
         isLoadedToArca =
           response?.isLoadedToArca === 'A' ? true : false || false;
-        console.log(response);
         if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
           // Convertir la lista de observaciones en un string legible
           const obsMessages =
@@ -204,7 +228,7 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
           data: {
             ...voucherData,
             ...(isPresupuesto ? { pointOfSale: 0, voucherNumber: 0 } : {}),
-            contactId: contact?.id,
+            contactId: newContact?.id,
             conditionPayment: isCredit,
             totalAmount,
             ivaAmount,
@@ -896,7 +920,6 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
 
       return await this.buildHtml({ voucher, contact, padronData });
     } catch (error) {
-      console.log('ERRORRR', error);
       throw new RpcException({
         message: `Error al generar el HTML del comprobante: ${error}`,
         status: HttpStatus.INTERNAL_SERVER_ERROR,

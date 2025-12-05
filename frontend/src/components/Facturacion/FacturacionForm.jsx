@@ -11,7 +11,6 @@
  *
  * @param {Function} onSubmit - Callback que se ejecuta cuando se crea la factura exitosamente
  */
-import ClienteForm from "components/Clientes/ClienteForm";
 import ProductoSelectorModal from "components/Tables/ProductoSelectorModal";
 import React, {
   useMemo,
@@ -22,7 +21,7 @@ import React, {
 } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { useContacts, useCreateContact } from "hooks/useContactsApi";
+import { useContactsByArca } from "hooks/useContactsApi";
 import {
   useNextInvoiceNumber,
   useCreateVoucher,
@@ -35,65 +34,7 @@ const tiposComprobante = [
   { value: "A", label: "Factura A" },
   { value: "B", label: "Factura B" },
   { value: "PRESUPUESTO", label: "Presupuesto" },
-  // COMENTADO: Esta empresa no emite facturas tipo C
-  // { value: "C", label: "Factura C" },
 ];
-
-// Opciones de condición frente al IVA según tipo de factura
-// COMENTADO: El backend asigna automáticamente la condición IVA según el cliente
-/*
-const condicionesIVA = {
-  A: [
-    { value: "responsable_inscripto", label: "IVA responsable inscripto" },
-    { value: "monotributo", label: "Responsable monotributo" },
-    { value: "social", label: "Monotributista social" },
-    {
-      value: "promovido",
-      label: "Monotributo Trabajador Independiente Promovido",
-    },
-  ],
-  B: [
-    { value: "exento", label: "IVA Sujeto Exento (ID 4)" },
-    { value: "final", label: "Consumidor Final (ID 5)" },
-    { value: "no_cat", label: "Sujeto No Categor. (ID 7)" },
-    { value: "prov_ext", label: "Proveedor del Exterior (ID 8)" },
-    { value: "cli_ext", label: "Cliente del Exterior (ID 9)" },
-    { value: "liberado", label: "IVA Liberado Ley 19.640 (ID 10)" },
-    { value: "no_alcanzado", label: "IVA No Alcanzado (ID 15)" },
-  ],
-};
-*/
-
-// Mapeo de condiciones IVA por tipo de factura para filtrado de clientes
-// Los valores deben coincidir exactamente con ivaCondition del backend
-const condicionesIVAporTipo = {
-  A: [
-    "RESPONSABLE_INSCRIPTO",
-    "MONOTRIBUTISTA",
-    "MONOTRIBUTISTA_SOCIAL",
-    "MONOTRIBUTISTA_PROMOVIDO",
-  ],
-  B: [
-    "EXENTO",
-    "CONSUMIDOR_FINAL",
-    "SUJETO_NO_CATEGORIZADO",
-    "PROVEEDOR_EXTERIOR",
-    "CLIENTE_EXTERIOR",
-    "IVA_LIBERADO",
-    "IVA_NO_ALCANZADO",
-  ],
-
-  // COMENTADO: Esta empresa no emite facturas tipo C
-  // C: [
-  //   "EXENTO",
-  //   "CONSUMIDOR_FINAL",
-  //   "SUJETO_NO_CATEGORIZADO",
-  //   "PROVEEDOR_EXTERIOR",
-  //   "CLIENTE_EXTERIOR",
-  //   "IVA_LIBERADO",
-  //   "IVA_NO_ALCANZADO"
-  // ], // Las facturas C ahora pueden usar los mismos clientes que las B
-};
 
 // Hook personalizado para debounce
 function useDebounce(value, delay) {
@@ -153,10 +94,10 @@ export default function FacturacionForm({ onSubmit }) {
     },
   });
 
-  const [modalClienteOpen, setModalClienteOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteSearchInput, setClienteSearchInput] = useState("");
-  const [newClienteId, setNewClienteId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
   const clienteSearchInputRef = useRef(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [shouldGenerateNumber, setShouldGenerateNumber] = useState(false);
@@ -174,41 +115,14 @@ export default function FacturacionForm({ onSubmit }) {
   // Debounce para la búsqueda de clientes
   const clienteSearch = useDebounce(clienteSearchInput, 700);
 
-  // Efecto para actualizar la fecha de emisión a la fecha actual
-  useEffect(() => {
-    console.log("=== useEffect EJECUTÁNDOSE ===");
-    const today = new Date().toISOString().split("T")[0];
-    console.log("useEffect - Actualizando fecha a:", today);
-    console.log(
-      "useEffect - Fecha actual del sistema:",
-      new Date().toISOString()
-    );
-
-    // Usar setTimeout para asegurar que se ejecute después del montaje
-    setTimeout(() => {
-      setValue("fechaEmision", today);
-      console.log("useEffect - setValue ejecutado para fechaEmision:", today);
-
-      // Verificar que se haya establecido correctamente
-      const currentValue = watch("fechaEmision");
-      console.log("useEffect - Valor actual de fechaEmision:", currentValue);
-      console.log("useEffect - Tipo del valor:", typeof currentValue);
-    }, 0);
-  }, []); // Dependencias vacías para ejecutar solo al montar
-
   // Hooks para obtener datos
-  const {
-    data: clientesData,
-    isLoading: isLoadingClientes,
-    refetch: refetchClientes,
-  } = useContacts({
+  const { data: clientesData } = useContactsByArca({
     offset: 1,
     pageSize: 100,
-    search: clienteSearch,
+    search: searchTerm,
     type: "CLIENT",
   });
 
-  const createContactMutation = useCreateContact();
   const createVoucherMutation = useCreateVoucher();
 
   const { fields, append, remove, update } = useFieldArray({
@@ -217,98 +131,14 @@ export default function FacturacionForm({ onSubmit }) {
   });
 
   const tipoComprobante = watch("tipoComprobante");
-  // COMENTADO: Ya no se usan opciones de condición IVA
-  // const opcionesCondIVA = useMemo(
-  //   () => condicionesIVA[tipoComprobante] || [],
-  //   [tipoComprobante]
-  // );
+
   const clienteSeleccionado = watch("cliente");
-
-  // Filtrar solo clientes del tipo CLIENT y que correspondan al tipo de factura seleccionado
-  const clientesList = useMemo(() => {
-    if (!clientesData?.data) return [];
-
-    // Primero filtrar solo clientes del tipo CLIENT
-    let clientesFiltrados = clientesData.data.filter(
-      (cliente) => cliente.type === "CLIENT"
-    );
-
-    // Debug: mostrar información sobre el filtrado
-    console.log("=== DEBUG FILTRADO DE CLIENTES ===");
-    console.log("Tipo de comprobante seleccionado:", tipoComprobante);
-    console.log(
-      "Total de clientes antes del filtro:",
-      clientesFiltrados.length
-    );
-    console.log(
-      "Clientes disponibles:",
-      clientesFiltrados.map((c) => ({
-        name: c.name,
-        ivaCondition: c.ivaCondition,
-      }))
-    );
-
-    // Si no hay tipo de comprobante seleccionado, mostrar todos los clientes
-    if (!tipoComprobante) {
-      console.log(
-        "Sin tipo de comprobante seleccionado, mostrando todos los clientes"
-      );
-      return clientesFiltrados;
-    }
-
-    //  mostrar clientes tipo B)
-
-    // COMENTADO: Esta empresa no emite facturas tipo C
-    // Para factura C, ahora también mostrar clientes (pueden usar los mismos que tipo B)
-    // if (tipoComprobante === "C") {
-    //   console.log("Factura tipo C - mostrando clientes válidos para tipo B");
-    //   const condicionesPermitidas =
-    //     condicionesIVAporTipo[tipoComprobante] || [];
-    //   console.log(
-    //     "Condiciones IVA permitidas para",
-    //     tipoComprobante,
-    //     ":",
-    //     condicionesPermitidas
-    //   );
-
-    //   clientesFiltrados = clientesFiltrados.filter((cliente) => {
-    //     const esValido = condicionesPermitidas.includes(cliente.ivaCondition);
-    //     console.log(
-    //       `Cliente ${cliente.name} (${cliente.ivaCondition}): ${esValido ? "VÁLIDO" : "NO VÁLIDO"}`
-    //     );
-    //     return esValido;
-    //   });
-
-    //   console.log("Clientes después del filtro:", clientesFiltrados.length);
-    //   return clientesFiltrados;
-    // }
-
-    // Para facturas A y B, filtrar por condición IVA
-    const condicionesPermitidas = condicionesIVAporTipo[tipoComprobante] || [];
-    console.log(
-      "Condiciones IVA permitidas para",
-      tipoComprobante,
-      ":",
-      condicionesPermitidas
-    );
-
-    clientesFiltrados = clientesFiltrados.filter((cliente) => {
-      const esValido = condicionesPermitidas.includes(cliente.ivaCondition);
-      console.log(
-        `Cliente ${cliente.name} (${cliente.ivaCondition}): ${esValido ? "VÁLIDO" : "NO VÁLIDO"}`
-      );
-      return esValido;
-    });
-
-    console.log("Clientes después del filtro:", clientesFiltrados.length);
-    return clientesFiltrados;
-  }, [clientesData, tipoComprobante]);
 
   // Obtener datos del cliente seleccionado para el CUIL
   const clienteSeleccionadoData = useMemo(() => {
-    if (!clienteSeleccionado || !clientesList.length) return null;
-    return clientesList.find((cli) => cli.id === clienteSeleccionado);
-  }, [clienteSeleccionado, clientesList]);
+    if (!clienteSeleccionado) return null;
+    return clienteSeleccionado;
+  }, [clienteSeleccionado]);
 
   // Hook para obtener el siguiente número de factura
   const {
@@ -343,48 +173,6 @@ export default function FacturacionForm({ onSubmit }) {
     // Redondear el total final a máximo 2 decimales para evitar problemas de precisión
     return Math.round(total * 100) / 100;
   }, [productos]);
-
-  const handleNuevoCliente = useCallback(
-    (data) => {
-      createContactMutation.mutate(data, {
-        onSuccess: (newCliente) => {
-          console.log("Cliente creado exitosamente:", newCliente);
-          // Refetch para obtener la lista actualizada
-          refetchClientes().then(() => {
-            // Actualizar el select de clientes con el nuevo cliente
-            setValue("cliente", newCliente.id);
-            setNewClienteId(newCliente.id);
-            setModalClienteOpen(false);
-          });
-        },
-        onError: (error) => {
-          console.log("=== ERROR CALLBACK ===");
-          console.error("Error al crear cliente en FacturacionForm:", error);
-          console.error("Error response:", error.response);
-        },
-      });
-    },
-    [createContactMutation, refetchClientes, setValue]
-  );
-
-  const handleClienteSearch = (e) => {
-    // Capturar la posición del scroll antes de actualizar el estado
-    setScrollPosition(window.scrollY);
-    setClienteSearchInput(e.target.value);
-  };
-
-  const handleClienteSearchKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Preservar la posición del scroll cuando se presiona Enter
-      const currentScrollY = window.scrollY;
-      requestAnimationFrame(() => {
-        window.scrollTo(0, currentScrollY);
-      });
-    }
-  };
 
   // Función para generar código para productos personalizados
   const generateRandomCode = () => {
@@ -505,8 +293,6 @@ export default function FacturacionForm({ onSubmit }) {
   const resetForm = useCallback(() => {
     // Resetear todos los campos del formulario
     setValue("tipoComprobante", "");
-    // COMENTADO: Ya no existe el campo condicionIVA
-    // setValue("condicionIVA", "");
     setValue("cliente", "");
     setValue("fechaEmision", new Date().toISOString().split("T")[0]);
     setValue("numeroFactura", "");
@@ -518,7 +304,6 @@ export default function FacturacionForm({ onSubmit }) {
 
     // Resetear estados relacionados
     setClienteSearchInput("");
-    setNewClienteId(null);
     setShouldGenerateNumber(false);
     setNumberGenerated(false);
     setPointOfSale(null);
@@ -568,8 +353,6 @@ export default function FacturacionForm({ onSubmit }) {
         // Validar que todos los productos tengan ID
         const productosSinId = formData.productos.filter((p) => !p.id);
         if (productosSinId.length > 0) {
-          console.error(productosSinId);
-
           toast.error("Algunos productos no tienen ID válido");
           return;
         }
@@ -580,22 +363,9 @@ export default function FacturacionForm({ onSubmit }) {
         // Obtener el usuario actual de la aplicación
         const currentUser = useAuthStore.getState().user;
 
-        // Debug: verificar el valor de la fecha antes de convertir
-        console.log("DEBUG - formData.fechaEmision:", formData.fechaEmision);
-        console.log(
-          "DEBUG - Tipo de formData.fechaEmision:",
-          typeof formData.fechaEmision
-        );
-        console.log(
-          "DEBUG - Fecha actual del sistema:",
-          new Date().toISOString()
-        );
-
         // Usar la fecha actual en lugar del valor del formulario
         const currentDate = new Date();
         const currentDateISO = currentDate.toISOString();
-        console.log("DEBUG - Usando fecha actual:", currentDateISO);
-
         // Preparar datos para la API según el formato requerido
         const voucherData = {
           cuil: parseInt(currentUser?.cuil), // CUIL del usuario de la aplicación (convertido a número)
@@ -628,37 +398,18 @@ export default function FacturacionForm({ onSubmit }) {
           voucherData.loadToArca = false;
         }
 
-        // Debug: verificar la fecha convertida
-        console.log(
-          "DEBUG - emissionDate usando fecha actual:",
-          voucherData.emissionDate
-        );
-
         // Solo agregar contactId si hay cliente seleccionado y NO es presupuesto
-        // COMENTADO: Las facturas tipo C no se emiten en esta empresa
         if (
-          clienteSeleccionadoData?.id &&
+          clienteSeleccionadoData &&
           formData.tipoComprobante !== "PRESUPUESTO"
         ) {
-          voucherData.contactId = clienteSeleccionadoData.id;
+          voucherData.contactCuil = clientesData
+            ? clientesData?.afipPerson?.persona?.numeroDocumento
+            : "";
         }
-
-        console.log("Datos de factura a enviar:", voucherData);
-        console.log("Usuario actual:", currentUser);
-        console.log("Cliente seleccionado:", clienteSeleccionadoData);
 
         // Crear la factura
         const result = await createVoucherMutation.mutateAsync(voucherData);
-
-        console.log("Factura creada:", result);
-        console.log("Estructura de result:", {
-          result,
-          resultData: result?.data,
-          resultId: result?.data?.id,
-          resultDirectId: result?.id,
-          keys: Object.keys(result || {}),
-          dataKeys: result?.data ? Object.keys(result.data) : "No data",
-        });
 
         // Verificar si hay un error en la respuesta
         if (
@@ -677,7 +428,7 @@ export default function FacturacionForm({ onSubmit }) {
           return;
         }
 
-        // Verificar si la factura se creó exitosamente
+        // // Verificar si la factura se creó exitosamente
         if (result?.success === true && result?.data?.id) {
           const mensaje =
             formData.tipoComprobante === "PRESUPUESTO"
@@ -700,7 +451,6 @@ export default function FacturacionForm({ onSubmit }) {
           resetForm();
         }
       } catch (error) {
-        console.error("Error al crear factura:", error);
         const mensaje =
           formData.tipoComprobante === "PRESUPUESTO"
             ? "Error al crear el presupuesto"
@@ -719,36 +469,12 @@ export default function FacturacionForm({ onSubmit }) {
     ]
   );
 
-  // Efecto para seleccionar automáticamente el nuevo cliente
-  useEffect(() => {
-    if (newClienteId && clientesList.some((cli) => cli.id === newClienteId)) {
-      setValue("cliente", newClienteId);
-      setNewClienteId(null);
-    }
-  }, [newClienteId, clientesList, setValue]);
-
   // Capturar la posición del scroll cuando cambie el valor del debounce
   useEffect(() => {
     if (clienteSearch && clienteSearchInput) {
       setScrollPosition(window.scrollY);
     }
   }, [clienteSearch, clienteSearchInput]);
-
-  // Preservar la posición del scroll durante las búsquedas de clientes
-  useEffect(() => {
-    if (clienteSearchInput && !isLoadingClientes && scrollPosition > 0) {
-      // Restaurar la posición del scroll después de que se complete la búsqueda
-      setTimeout(() => {
-        window.scrollTo(0, scrollPosition);
-      }, 0);
-      setTimeout(() => {
-        window.scrollTo(0, scrollPosition);
-      }, 50);
-      setTimeout(() => {
-        window.scrollTo(0, scrollPosition);
-      }, 100);
-    }
-  }, [clientesData, isLoadingClientes, clienteSearchInput, scrollPosition]);
 
   // Restaurar posición del scroll inmediatamente después de cambios en clientesData
   useEffect(() => {
@@ -759,17 +485,6 @@ export default function FacturacionForm({ onSubmit }) {
       });
     }
   }, [clientesData, scrollPosition]);
-
-  if (isLoadingClientes) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-lg text-gray-600">Cargando datos...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -989,9 +704,7 @@ export default function FacturacionForm({ onSubmit }) {
               */}
             </div>
 
-            {/* Fechas y numeración */}
-
-            {/* Cliente - Solo mostrar si NO es presupuesto */}
+            {/* CLIENTES */}
             {tipoComprobante !== "PRESUPUESTO" && (
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -1013,34 +726,6 @@ export default function FacturacionForm({ onSubmit }) {
 
                 <div className="space-y-4">
                   {/* Mensaje informativo sobre filtrado de clientes */}
-                  {tipoComprobante && (
-                    <div className="flex items-center gap-2 text-purple-600 text-sm bg-purple-50 p-3 rounded-lg border border-purple-200">
-                      <svg
-                        className="w-4 h-4 text-purple-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      <span>
-                        {tipoComprobante === "A" &&
-                          `Clientes disponibles: ${clientesList.length} cliente(s) con condición IVA válida para Factura A`}
-                        {tipoComprobante === "B" &&
-                          `Clientes disponibles: ${clientesList.length} cliente(s) con condición IVA válida para Factura B`}
-                        {/* COMENTADO: Esta empresa no emite facturas tipo C
-                        {tipoComprobante === "C" &&
-                          `Clientes disponibles: ${clientesList.length} cliente(s) con condición IVA válida para Factura C`}
-                        */}
-                      </span>
-                    </div>
-                  )}
-
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <svg
@@ -1060,38 +745,18 @@ export default function FacturacionForm({ onSubmit }) {
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2">
                       <input
-                        ref={clienteSearchInputRef}
                         type="text"
-                        placeholder="Buscar cliente por nombre o DNI..."
+                        placeholder="Buscar cliente por DNI..."
                         value={clienteSearchInput}
-                        onChange={handleClienteSearch}
-                        onKeyDown={handleClienteSearchKeyDown}
-                        onFocus={(e) => {
-                          // Prevenir scroll automático al enfocar
-                          e.target.scrollIntoView = () => {};
-                        }}
+                        onChange={(e) => setClienteSearchInput(e.target.value)}
                         className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                       />
                       <button
                         type="button"
                         className="bg-gradient-to-r from-green-600 to-emerald-600 text-white px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap"
-                        onClick={() => setModalClienteOpen(true)}
+                        onClick={() => setSearchTerm(clienteSearchInput)}
                       >
-                        <svg
-                          className="w-3 h-3 sm:w-4 sm:h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                          />
-                        </svg>
-                        <span className="hidden xs:inline">Nuevo Cliente</span>
-                        <span className="xs:hidden">+ Cliente</span>
+                        <span className="hidden xs:inline">Buscar Cliente</span>
                       </button>
                     </div>
                   </div>
@@ -1122,13 +787,20 @@ export default function FacturacionForm({ onSubmit }) {
                       })}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-200 bg-white shadow-sm hover:shadow-md"
                     >
-                      <option value="">Seleccione un cliente...</option>
-                      {clientesList.map((cli) => (
-                        <option key={cli.id} value={cli.id}>
-                          {cli.name} - {cli.ivaCondition} -{" "}
-                          {cli.documentNumber && `(${cli.documentNumber} ) `}
+                      {
+                        <option
+                          key={
+                            clientesData?.afipPerson?.persona?.numeroDocumento
+                          }
+                          value={
+                            clientesData?.afipPerson?.persona?.numeroDocumento
+                          }
+                        >
+                          {!clientesData
+                            ? "No se encontró ningún cliente"
+                            : `${clientesData?.afipPerson?.persona?.nombre} - ${clientesData?.afipPerson?.persona?.apellido} - (${clientesData?.afipPerson?.persona?.numeroDocumento})`}
                         </option>
-                      ))}
+                      }
                     </select>
                     {errors.cliente && (
                       <div className="flex items-center gap-2 text-red-500 text-sm">
@@ -1150,6 +822,8 @@ export default function FacturacionForm({ onSubmit }) {
                 </div>
               </div>
             )}
+
+            {/* FECHA Y ENUMERACION */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <svg
@@ -1344,7 +1018,7 @@ export default function FacturacionForm({ onSubmit }) {
               </div>
             </div>
 
-            {/* Productos */}
+            {/* PRODUCTOS */}
             <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl border border-orange-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -1659,7 +1333,7 @@ export default function FacturacionForm({ onSubmit }) {
               )}
             </div>
 
-            {/* Total y acciones finales */}
+            {/* TOTAL Y ACCIONES FINALES */}
             <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div className="flex items-center space-x-4">
@@ -1788,27 +1462,7 @@ export default function FacturacionForm({ onSubmit }) {
         productosAgregadosCodigos={productosAgregadosCodigos}
       />
 
-      {/* Modal de nuevo cliente - FUERA del formulario principal */}
-      {modalClienteOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-            <button
-              onClick={() => setModalClienteOpen(false)}
-              className="absolute   top-4 right-4 text-2xl font-bold hover:text-gray-600 transition-colors duration-200"
-            >
-              &times;
-            </button>
-
-            <div className="mt-4">
-              <ClienteForm
-                onSubmit={handleNuevoCliente}
-                useInternalMutation={false}
-                onCancel={() => setModalClienteOpen(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SE SACO EL CLIENTFORM */}
     </>
   );
 }

@@ -90,19 +90,33 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
     }
     async create(createVoucherDto) {
         try {
-            const { cuil, products, paidAmount = 0, available = true, initialPayment, contactId, currency, loadToArca, associatedVoucherNumber, associatedVoucherType, ...voucherData } = createVoucherDto;
-            let contact;
+            const { cuil, products, paidAmount = 0, available = true, initialPayment, contactCuil, currency, loadToArca, associatedVoucherNumber, associatedVoucherType, ...voucherData } = createVoucherDto;
+            let newContact;
             let documentNumber;
             const isPresupuesto = createVoucherDto.type === enum_1.VoucherType.PRESUPUESTO;
-            if (contactId) {
-                contact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'find_one_contact' }, contactId));
-                if (!contact) {
-                    return {
-                        status: common_1.HttpStatus.BAD_REQUEST,
-                        message: `[CREATE_VOUCHER] No se encontró el contacto con ID ${contactId}`,
+            if (contactCuil) {
+                const contact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'search_contacts_arca' }, { query: contactCuil }));
+                if (contact) {
+                    const contactData = {
+                        name: `${contact?.afipPerson?.persona?.nombre} ${contact?.afipPerson?.persona?.apellido}`,
+                        ivaCondition: createVoucherDto.type === 'FACTURA_B'
+                            ? 'CONSUMIDOR_FINAL'
+                            : 'RESPONSABLE_INSCRIPTO',
+                        documentType: 'DNI',
+                        documentNumber: contact?.afipPerson?.persona?.numeroDocumento,
+                        address: `${contact?.afipPerson?.persona?.domicilio?.calle} ${contact?.afipPerson?.persona?.domicilio?.numero}`,
+                        type: 'CLIENT',
                     };
+                    console.log(contactData);
+                    newContact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'create_contact' }, contactData));
+                    if (!newContact) {
+                        return {
+                            status: common_1.HttpStatus.BAD_REQUEST,
+                            message: `[CREATE_VOUCHER] No se pudo guardar el contacto ${contact?.afipPerson?.persona?.nombre}`,
+                        };
+                    }
+                    documentNumber = parseInt(newContact?.documentNumber);
                 }
-                documentNumber = parseInt(contact?.documentNumber);
             }
             if (products.some((p) => p.quantity <= 0)) {
                 return {
@@ -138,7 +152,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                         .slice(0, 10)
                         .replace(/-/g, ''),
                     contactCuil: documentNumber,
-                    ivaCondition: contact?.ivaCondition || 'CONSUMIDOR_FINAL',
+                    ivaCondition: newContact?.ivaCondition || 'CONSUMIDOR_FINAL',
                     totalAmount,
                     netAmount,
                     ivaAmount,
@@ -149,7 +163,6 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                 arcaDueDate = response?.caeFchVto;
                 isLoadedToArca =
                     response?.isLoadedToArca === 'A' ? true : false || false;
-                console.log(response);
                 if (response?.status === 'REJECTED' || !arcaCae || !arcaDueDate) {
                     const obsMessages = response.errors?.map((o) => `[${o.Code}] ${o.Msg}`).join('; ') ??
                         '';
@@ -167,7 +180,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
                     data: {
                         ...voucherData,
                         ...(isPresupuesto ? { pointOfSale: 0, voucherNumber: 0 } : {}),
-                        contactId: contact?.id,
+                        contactId: newContact?.id,
                         conditionPayment: isCredit,
                         totalAmount,
                         ivaAmount,
@@ -659,7 +672,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
           <div><b>Cliente:</b> ${contact?.name || '-'}</div>
         </div>
         <div class="client-row">
-          <div><b>IVA:</b> ${contact?.ivaCondition || '-'}</div>
+          <div><b>IVA:</b> ${contact?.ivaCondition || 'Consumidor Final'}</div>
           <div><b>Domicilio:</b> ${contact?.address || '-'}</div>
         </div>
         ${letra !== 'P'
@@ -723,7 +736,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
       <!-- Footer -->
       <section class="foot">
         <div>
-          ${letra === 'P' ? '<div class="bold">Comprobante Autorizado</div>' : '<div class="bold">Comprobante No Autorizado</div>'}
+          ${letra === 'P' ? '<div class="bold">Comprobante No Autorizado</div>' : '<div class="bold">Comprobante Autorizado</div>'}
           <p class="foot-note">
             Esta Administración Federal no se responsabiliza por los datos
             ingresados en el detalle de la operación
@@ -738,7 +751,7 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             </tr>
             <tr>
               <td><b>Vto. CAE</b></td>
-              <td class="t-right">${voucher?.arcaDueDate || '-'}</td>
+              <td class="t-right">${formatDate(voucher?.arcaDueDate) || '-'}</td>
             </tr>
           </table>
           <div class="t-center mt-6">Pág 1/1</div>
@@ -776,7 +789,6 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             return await this.buildHtml({ voucher, contact, padronData });
         }
         catch (error) {
-            console.log('ERRORRR', error);
             throw new microservices_1.RpcException({
                 message: `Error al generar el HTML del comprobante: ${error}`,
                 status: common_1.HttpStatus.INTERNAL_SERVER_ERROR,
