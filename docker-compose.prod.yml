@@ -33,6 +33,8 @@ services:
       # Padron
       - WS_PADRON_A13_URL_PROD=https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
       - WS_PADRON_A13_URL_HOM=https://ws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
+      - WS_PADRON_A5_URL_PROD=https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5?WSDL
+      - WS_PADRON_A5_URL_HOM=https://ws.afip.gov.ar/sr-padron/webservices/personaServiceA5?WSDL
 
     restart: unless-stopped
     depends_on:
