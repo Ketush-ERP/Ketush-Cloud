@@ -127,50 +127,50 @@ services:
       - ketshup-app
 
   # VOUCHER MS
-  voucher-ms-ketush:
-    profiles: ["voucher", "docker"]
-    image: voucher-ms-ketush
-    build:
-      context: ./microservices/voucher-ms
-      dockerfile: dockerfile.prod
-    environment:
-      - PORT=3006
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
-      - NATS_SERVERS=nats://nats-servers:4222
-    depends_on:
-      - voucher-db
-      - nats-servers
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  # voucher-ms-ketush:
+  #   profiles: ["voucher", "docker"]
+  #   image: voucher-ms-ketush
+  #   build:
+  #     context: ./microservices/voucher-ms
+  #     dockerfile: dockerfile.prod
+  #   environment:
+  #     - PORT=3006
+  #     - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD_VOUCHER_ENV}@voucher-db:5432/${POSTGRES_DB_VOUCHER_ENV}?schema=public&sslmode=disable
+  #     - NATS_SERVERS=nats://nats-servers:4222
+  #   depends_on:
+  #     - voucher-db
+  #     - nats-servers
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
   # ARCA / AFIP MS
-  arca-ms-ketush:
-    profiles: ["afip", "docker"]
-    image: arca-ms-ketush
-    build:
-      context: ./microservices/arca-ms
-      dockerfile: dockerfile.prod
-    environment:
-      - PORT=3008
-      - NATS_SERVERS=nats://nats-servers:4222
-      - CERT_PATH=./certs/prod/Ketush.crt
-      - PRIVATE_KEY_PATH=./certs/prod/private.key
-      - TA_FILES_PATH=./data/prod
-      - CUIT=20169658146
-      - PROD=false
-      - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
-      - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
-      - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
-      - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
-      - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
-      - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
-      - WS_PADRON_A13_URL_PROD=https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
-      - WS_PADRON_A13_URL_HOM=https://ws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
+  # arca-ms-ketush:
+  #   profiles: ["afip", "docker"]
+  #   image: arca-ms-ketush
+  #   build:
+  #     context: ./microservices/arca-ms
+  #     dockerfile: dockerfile.prod
+  #   environment:
+  #     - PORT=3008
+  #     - NATS_SERVERS=nats://nats-servers:4222
+  #     - CERT_PATH=./certs/prod/Ketush.crt
+  #     - PRIVATE_KEY_PATH=./certs/prod/private.key
+  #     - TA_FILES_PATH=./data/prod
+  #     - CUIT=20169658146
+  #     - PROD=false
+  #     - WSDL_WSAA_HOM=https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL
+  #     - WSDL_WSAA_PROD=https://wsaa.afip.gov.ar/ws/services/LoginCms?WSDL
+  #     - WSDL_WSFEX_HOM=https://wswhomo.afip.gov.ar/wsfexv1/service.asmx?WSDL
+  #     - WSDL_WSFEX_PROD=https://servicios1.afip.gov.ar/wsfexv1/service.asmx?WSDL
+  #     - WSDL_WSFE_HOM=https://wswhomo.afip.gov.ar/wsfev1/service.asmx?WSDL
+  #     - WSDL_WSFE_PROD=https://servicios1.afip.gov.ar/wsfev1/service.asmx?WSDL
+  #     - WS_PADRON_A13_URL_PROD=https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
+  #     - WS_PADRON_A13_URL_HOM=https://ws.afip.gov.ar/sr-padron/webservices/personaServiceA13?WSDL
 
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
   # ---------------------------
   # GATEWAY + FRONTEND
@@ -193,21 +193,21 @@ services:
     networks:
       - ketshup-app
 
-  frontend-ketush:
-    profiles: ["frontend", "docker"]
-    image: frontend-ketush
-    environment:
-      - PORT=5175
-    ports:
-      - "5175:5175"
-    build:
-      context: ./frontend
-      dockerfile: dockerfile.prod
-    depends_on:
-      - client-gateway-ketush
-    restart: unless-stopped
-    networks:
-      - ketshup-app
+  # frontend-ketush:
+  #   profiles: ["frontend", "docker"]
+  #   image: frontend-ketush
+  #   environment:
+  #     - PORT=5175
+  #   ports:
+  #     - "5175:5175"
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: dockerfile.prod
+  #   depends_on:
+  #     - client-gateway-ketush
+  #   restart: unless-stopped
+  #   networks:
+  #     - ketshup-app
 
 networks:
   ketshup-app:

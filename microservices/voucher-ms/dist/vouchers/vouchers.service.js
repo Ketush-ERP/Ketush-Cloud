@@ -96,18 +96,19 @@ let VouchersService = VouchersService_1 = class VouchersService extends client_1
             const isPresupuesto = createVoucherDto.type === enum_1.VoucherType.PRESUPUESTO;
             if (contactCuil) {
                 const contact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'search_contacts_arca' }, { query: contactCuil }));
+                console.log(contactCuil.length);
+                console.log(contactCuil);
                 if (contact) {
                     const contactData = {
                         name: `${contact?.afipPerson?.persona?.nombre} ${contact?.afipPerson?.persona?.apellido}`,
                         ivaCondition: createVoucherDto.type === 'FACTURA_B'
                             ? 'CONSUMIDOR_FINAL'
                             : 'RESPONSABLE_INSCRIPTO',
-                        documentType: 'DNI',
-                        documentNumber: contact?.afipPerson?.persona?.numeroDocumento,
+                        documentType: contactCuil.length > 8 ? 'CUIL' : 'DNI',
+                        documentNumber: contactCuil,
                         address: `${contact?.afipPerson?.persona?.domicilio?.calle} ${contact?.afipPerson?.persona?.domicilio?.numero}`,
                         type: 'CLIENT',
                     };
-                    console.log(contactData);
                     newContact = await (0, rxjs_1.firstValueFrom)(this.client.send({ cmd: 'create_contact' }, contactData));
                     if (!newContact) {
                         return {

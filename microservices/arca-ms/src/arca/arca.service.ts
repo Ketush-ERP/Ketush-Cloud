@@ -18,7 +18,22 @@ export class ArcaService {
 
   private pointOfSale = 3;
 
-  private _dniToPossibleCuits(dni: string): string[] {
+  private _dniToPossibleCuits(doc: string): string[] {
+    if (!doc) return [];
+
+    const clean = doc.replace(/\D/g, '');
+
+    // 🔹 Si ya es CUIT → devolver sólo ese CUIT
+    if (clean.length === 11) {
+      return [clean];
+    }
+
+    // 🔹 Si NO tiene 8 dígitos, no sirve como DNI
+    if (clean.length !== 8) {
+      return [];
+    }
+
+    // 🔹 Si tiene 8 dígitos → generar posibles CUIT
     const prefixes = ['20', '23', '27', '30'];
 
     const calcDv = (num: string) => {
@@ -38,7 +53,7 @@ export class ArcaService {
     };
 
     return prefixes.map((prefix) => {
-      const base = prefix + dni;
+      const base = prefix + clean;
       const dv = calcDv(base);
       return `${base}${dv}`;
     });
@@ -489,7 +504,8 @@ export class ArcaService {
         <ar:FeDetReq>
           <ar:FECAEDetRequest>
             <ar:Concepto>1</ar:Concepto>
-            <ar:DocTipo>${dto.contactCuil ? 80 : 99}</ar:DocTipo>
+            
+            <ar:DocTipo>${dto.contactCuil ? 96 : 99}</ar:DocTipo>
             ${docNroXml}
             <ar:CbteDesde>${dto.voucherNumber}</ar:CbteDesde>
             <ar:CbteHasta>${dto.voucherNumber}</ar:CbteHasta>

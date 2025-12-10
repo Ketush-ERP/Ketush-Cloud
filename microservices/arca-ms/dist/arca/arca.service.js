@@ -22,7 +22,16 @@ let ArcaService = class ArcaService {
     sign = null;
     expirationTime = null;
     pointOfSale = 3;
-    _dniToPossibleCuits(dni) {
+    _dniToPossibleCuits(doc) {
+        if (!doc)
+            return [];
+        const clean = doc.replace(/\D/g, '');
+        if (clean.length === 11) {
+            return [clean];
+        }
+        if (clean.length !== 8) {
+            return [];
+        }
         const prefixes = ['20', '23', '27', '30'];
         const calcDv = (num) => {
             const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
@@ -39,7 +48,7 @@ let ArcaService = class ArcaService {
             return dv;
         };
         return prefixes.map((prefix) => {
-            const base = prefix + dni;
+            const base = prefix + clean;
             const dv = calcDv(base);
             return `${base}${dv}`;
         });
@@ -385,7 +394,8 @@ let ArcaService = class ArcaService {
         <ar:FeDetReq>
           <ar:FECAEDetRequest>
             <ar:Concepto>1</ar:Concepto>
-            <ar:DocTipo>${dto.contactCuil ? 80 : 99}</ar:DocTipo>
+            
+            <ar:DocTipo>${dto.contactCuil ? 96 : 99}</ar:DocTipo>
             ${docNroXml}
             <ar:CbteDesde>${dto.voucherNumber}</ar:CbteDesde>
             <ar:CbteHasta>${dto.voucherNumber}</ar:CbteHasta>

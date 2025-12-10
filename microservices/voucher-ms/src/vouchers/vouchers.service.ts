@@ -121,7 +121,6 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
             { query: contactCuil },
           ),
         );
-
         if (contact) {
           const contactData = {
             name: `${contact?.afipPerson?.persona?.nombre} ${contact?.afipPerson?.persona?.apellido}`,
@@ -129,13 +128,11 @@ export class VouchersService extends PrismaClient implements OnModuleInit {
               createVoucherDto.type === 'FACTURA_B'
                 ? 'CONSUMIDOR_FINAL'
                 : 'RESPONSABLE_INSCRIPTO',
-            documentType: 'DNI',
-            documentNumber: contact?.afipPerson?.persona?.numeroDocumento,
+            documentType: contactCuil.length > 8 ? 'CUIL' : 'DNI',
+            documentNumber: contactCuil,
             address: `${contact?.afipPerson?.persona?.domicilio?.calle} ${contact?.afipPerson?.persona?.domicilio?.numero}`,
             type: 'CLIENT',
           };
-
-          console.log(contactData);
 
           newContact = await firstValueFrom(
             this.client.send({ cmd: 'create_contact' }, contactData),
