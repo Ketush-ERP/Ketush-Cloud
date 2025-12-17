@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { DataTable } from "components/Tables/DataTable";
 import { useProducts } from "hooks/useProductsApi";
-import { useProviders } from "hooks/useProvidersApi";
 import { useProductSelectorStore } from "stores/useProductSelectorStore";
+import { useProvidersFilterBySupplier } from "hooks/useProvidersApi";
 
 export default function ProductoSelectorModal({
   open,
@@ -26,7 +26,8 @@ export default function ProductoSelectorModal({
   } = useProductSelectorStore();
 
   // Hook para obtener la lista de proveedores
-  const { data: providersData, isLoading: isLoadingProviders } = useProviders();
+  const { data: providersData, isLoading: isLoadingProviders } =
+    useProvidersFilterBySupplier();
 
   // Usar el hook de productos para traer productos según la búsqueda
   const { data: productosData, isLoading } = useProducts({

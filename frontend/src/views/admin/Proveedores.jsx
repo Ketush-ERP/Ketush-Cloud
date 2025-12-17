@@ -1,21 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import ErrorFallback from "components/ErrorFallback";
 import ProvidersContainer from "components/Providers/ProvidersContainer";
 import ProviderItem from "components/Providers/ProviderItem";
 import { ErrorBoundary } from "react-error-boundary";
-import { useProviders } from "hooks/useProvidersApi";
 import LoadingScreen from "components/LoadingScreen";
 import { FaTruck } from "react-icons/fa";
+import { useProvidersFilterBySupplier } from "hooks/useProvidersApi";
 
 export const Proveedores = () => {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-
-  const { data, isLoading, isError, error } = useProviders({
-    page,
-    pageSize: 20,
-    search,
-  });
+  const { data, isLoading, isError, error } = useProvidersFilterBySupplier();
 
   if (isLoading) return <LoadingScreen text="Cargando proveedores..." />;
   if (isError) return <ErrorFallback error={error} />;

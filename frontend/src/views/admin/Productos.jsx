@@ -3,9 +3,9 @@ import ErrorFallback from "components/ErrorFallback";
 import { DataTable } from "components/Tables/DataTable";
 import { ErrorBoundary } from "react-error-boundary";
 import { useProducts } from "hooks/useProductsApi";
-import { useProviders } from "hooks/useProvidersApi";
 import LoadingScreen from "components/LoadingScreen";
 import useProductsTableStore from "stores/useProductsTableStore";
+import { useProvidersFilterBySupplier } from "hooks/useProvidersApi";
 
 export const Productos = () => {
   const {
@@ -28,7 +28,8 @@ export const Productos = () => {
   });
 
   // Hook para obtener la lista de proveedores
-  const { data: providersData, isLoading: isLoadingProviders } = useProviders();
+  const { data: providersData, isLoading: isLoadingProviders } =
+    useProvidersFilterBySupplier();
 
   const [searchInput, setSearchInput] = useState(search);
 

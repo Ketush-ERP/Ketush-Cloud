@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "api/axiosInstance";
-import toast from "react-hot-toast";
 
 export function useProviders({ search = "" } = {}) {
   return useQuery({
@@ -16,6 +15,19 @@ export function useProviders({ search = "" } = {}) {
         ...data,
         data: (data.data || []).filter((item) => item.type === "SUPPLIER"),
       };
+    },
+    cacheTime: 1000 * 60 * 5, // 5 minutos
+  });
+}
+
+export function useProvidersFilterBySupplier() {
+  return useQuery({
+    queryKey: ["providers"],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get(
+        `/contacts/search?&type=SUPPLIER`
+      );
+      return data;
     },
     cacheTime: 1000 * 60 * 5, // 5 minutos
   });
